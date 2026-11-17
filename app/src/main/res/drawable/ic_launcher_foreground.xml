@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp" android:height="108dp"
+    android:viewportWidth="108" android:viewportHeight="108">
+    <!-- Crescent moon (same geometry as the in-app Luna hero) -->
+    <path android:fillColor="#D8CCFF"
+        android:pathData="M42.76,19.35A20.7,20.7 0 1,0 62.3,49.65A18.06,18.06 0 0,1 42.76,19.35Z" />
+    <!-- Cloud -->
+    <path android:fillColor="#EDE9FF"
+        android:pathData="M30,68 a12,12 0 0,1 2,-23.8 A17,17 0 0,1 64,38 a13,13 0 0,1 12,13 a11,11 0 0,1 -2,17 Z" />
+    <!-- Rain drops -->
+    <path android:strokeColor="#B9A9F5" android:strokeWidth="4" android:strokeLineCap="round"
+        android:pathData="M38,78 l-3,8 M54,80 l-3,8 M70,78 l-3,8" />
+    <!-- Sparkle -->
+    <path android:fillColor="#FFFFFF"
+        android:pathData="M74,23 L75.6,28.4 L81,30 L75.6,31.6 L74,37 L72.4,31.6 L67,30 L72.4,28.4 Z" />
+</vector>

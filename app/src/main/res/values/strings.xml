@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">iWeather</string>
+    <string name="widget_small_desc">iWeather — current weather at a glance (2x2)</string>
+    <string name="widget_medium_desc">iWeather — current weather + next hours (4x2)</string>
+    <string name="widget_large_desc">iWeather — full weather dashboard (4x4, resizable)</string>
+</resources>
