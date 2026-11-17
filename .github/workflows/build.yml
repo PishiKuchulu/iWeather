@@ -41,7 +41,7 @@ jobs:
       # AUD-011: (re)generate the dependency lockfile baseline; the artifact is
       # committed back as gradle.lockfile, after which locking can go strict.
       - name: Generate dependency lockfile
-        run: gradle dependencies --write-locks
+        run: gradle testDebugUnitTest assembleDebug assembleRelease --write-locks
       - name: Upload dependency lockfile
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
