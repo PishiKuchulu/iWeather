@@ -48,7 +48,7 @@ data class IWeatherUiState(
     val testState: TestState = TestState.IDLE,
     val favorites: List<City> = emptyList(),
     val favInfo: Map<String, FavInfo> = emptyMap(),
-    /** One-shot transient message key for snackbars: cache_cleared | data_cleared | reset_done | fav_added | fav_removed | fav_limit. */
+    /** One-shot transient message key for snackbars: cache_cleared | data_cleared | reset_done | fav_added | fav_removed | fav_limit | fav_exists. */
     val message: String? = null,
 )
 
@@ -226,6 +226,11 @@ class IWeatherViewModel(app: Application) : AndroidViewModel(app) {
 
     fun toggleFavorite() {
         val city = _state.value.report?.city ?: return
+        toggleFavorite(city)
+    }
+
+    /** Adds [city] to the saved locations, or removes it when already saved. Used by the hero star and the search/city rows. */
+    fun toggleFavorite(city: City) {
         val favs = _state.value.favorites
         val existing = favs.firstOrNull { FavoritesStore.same(it, city) }
         val (next, msg) = when {
@@ -236,6 +241,35 @@ class IWeatherViewModel(app: Application) : AndroidViewModel(app) {
         FavoritesStore.save(getApplication(), next)
         _state.update { it.copy(favorites = next, message = msg) }
         publishFavInfo()
+    }
+
+    /** Adds [city] without switching to it (search results, popular list). No-op with a hint when already saved. */
+    fun addFavorite(city: City) {
+        val favs = _state.value.favorites
+        val msg = when {
+            favs.any { FavoritesStore.same(it, city) } -> "fav_exists"
+            favs.size >= FavoritesStore.MAX -> "fav_limit"
+            else -> {
+                val next = favs + city
+                FavoritesStore.save(getApplication(), next)
+                _state.update { it.copy(favorites = next) }
+                publishFavInfo()
+                "fav_added"
+            }
+        }
+        _state.update { it.copy(message = msg) }
+    }
+
+    /** Moves a saved location one step up/down in the list; the order is persisted and drives the Cities sheet. */
+    fun moveFavorite(city: City, up: Boolean) {
+        val favs = _state.value.favorites
+        val idx = favs.indexOfFirst { FavoritesStore.same(it, city) }
+        if (idx < 0) return
+        val target = if (up) idx - 1 else idx + 1
+        if (target !in favs.indices) return
+        val next = favs.toMutableList().also { it[idx] = favs[target]; it[target] = favs[idx] }
+        FavoritesStore.save(getApplication(), next)
+        _state.update { it.copy(favorites = next) }
     }
 
     fun removeFavorite(city: City) {

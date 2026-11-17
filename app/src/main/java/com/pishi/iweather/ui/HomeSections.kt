@@ -39,6 +39,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.pishi.iweather.data.DayForecast
 import com.pishi.iweather.data.WeatherReport
+import com.pishi.iweather.ui.theme.Luna
 import com.pishi.iweather.data.wmoInfo
 import com.pishi.iweather.util.AppSettings
 import com.pishi.iweather.util.AppStrings
@@ -101,13 +102,13 @@ internal fun AirCard(report: WeatherReport, st: AppSettings) {
             Text(Fmt.num(primaryValue, st.lang), color = aqiColor(primaryValue, usPrimary), fontSize = 40.sp, fontWeight = FontWeight.Bold)
             Spacer(Modifier.width(10.dp))
             Column {
-                Text(primaryLabel, color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Medium)
-                Text(primaryBand ?: "", color = Color.White.copy(alpha = 0.9f), fontSize = 13.sp)
+                Text(primaryLabel, color = Luna.Content, fontSize = 13.sp, fontWeight = FontWeight.Medium)
+                Text(primaryBand ?: "", color = Luna.Content.copy(alpha = 0.9f), fontSize = 13.sp)
             }
             Spacer(Modifier.weight(1f))
             Column(horizontalAlignment = Alignment.End) {
-                air.usAqi?.let { Text("${s.aqiUs}: ${Fmt.num(it, st.lang)}", color = Color.White.copy(alpha = 0.85f), fontSize = 12.sp) }
-                air.euAqi?.let { Text("${s.aqiEu}: ${Fmt.num(it, st.lang)}", color = Color.White.copy(alpha = 0.85f), fontSize = 12.sp) }
+                air.usAqi?.let { Text("${s.aqiUs}: ${Fmt.num(it, st.lang)}", color = Luna.Content.copy(alpha = 0.85f), fontSize = 12.sp) }
+                air.euAqi?.let { Text("${s.aqiEu}: ${Fmt.num(it, st.lang)}", color = Luna.Content.copy(alpha = 0.85f), fontSize = 12.sp) }
             }
         }
         Spacer(Modifier.height(8.dp))
@@ -128,12 +129,12 @@ internal fun AirCard(report: WeatherReport, st: AppSettings) {
                     Column(
                         modifier = Modifier
                             .weight(1f)
-                            .background(Color.White.copy(alpha = 0.10f), RoundedCornerShape(10.dp))
+                            .background(Luna.Content.copy(alpha = 0.10f), RoundedCornerShape(10.dp))
                             .padding(8.dp),
                         horizontalAlignment = Alignment.CenterHorizontally,
                     ) {
-                        Text(name, color = Color.White.copy(alpha = 0.8f), fontSize = 11.sp)
-                        Text(Fmt.num(v.roundToInt(), st.lang), color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Medium)
+                        Text(name, color = Luna.Content.copy(alpha = 0.8f), fontSize = 11.sp)
+                        Text(Fmt.num(v.roundToInt(), st.lang), color = Luna.Content, fontSize = 14.sp, fontWeight = FontWeight.Medium)
                     }
                 }
                 repeat(3 - row.size) { Spacer(Modifier.weight(1f)) }
@@ -145,12 +146,12 @@ internal fun AirCard(report: WeatherReport, st: AppSettings) {
         if (advice.isNotEmpty()) {
             Spacer(Modifier.height(8.dp))
             for (line in advice) {
-                Text("🩺 $line", color = Color.White.copy(alpha = 0.95f), fontSize = 12.5.sp, modifier = Modifier.padding(vertical = 1.dp))
+                Text("🩺 $line", color = Luna.Content.copy(alpha = 0.95f), fontSize = 12.5.sp, modifier = Modifier.padding(vertical = 1.dp))
             }
         }
     }
     Spacer(Modifier.height(6.dp))
-    Text(s.camsNote, color = Color.White.copy(alpha = 0.65f), fontSize = 11.sp)
+    Text(s.camsNote, color = Luna.Content.copy(alpha = 0.65f), fontSize = 11.sp)
 }
 
 @Composable
@@ -188,9 +189,9 @@ internal fun SunMoonCard(report: WeatherReport, st: AppSettings) {
 internal fun SunCell(emoji: String, label: String, value: String) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Text(emoji, fontSize = 20.sp)
-        Text(label, color = Color.White.copy(alpha = 0.85f), fontSize = 11.sp, textAlign = TextAlign.Center)
+        Text(label, color = Luna.Content.copy(alpha = 0.85f), fontSize = 11.sp, textAlign = TextAlign.Center)
         if (value.isNotBlank()) {
-            Text(value, color = Color.White, fontSize = 12.5.sp, fontWeight = FontWeight.Medium)
+            Text(value, color = Luna.Content, fontSize = 12.5.sp, fontWeight = FontWeight.Medium)
         }
     }
 }
@@ -218,35 +219,35 @@ internal fun DailyList(report: WeatherReport, st: AppSettings) {
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Column(Modifier.width(86.dp)) {
-                        Text(dayName, color = Color.White, fontWeight = FontWeight.Medium, fontSize = 13.5.sp)
-                        Text(dateText, color = Color.White.copy(alpha = 0.75f), fontSize = 11.5.sp)
+                        Text(dayName, color = Luna.Content, fontWeight = FontWeight.Medium, fontSize = 13.5.sp)
+                        Text(dateText, color = Luna.Content.copy(alpha = 0.75f), fontSize = 11.5.sp)
                     }
                     Text(di.emoji, fontSize = 20.sp)
                     Spacer(Modifier.width(8.dp))
                     Column(Modifier.weight(1f)) {
-                        Text(if (st.isFa) di.labelFa else di.labelEn, color = Color.White, fontSize = 13.sp)
+                        Text(if (st.isFa) di.labelFa else di.labelEn, color = Luna.Content, fontSize = 13.sp)
                         Text(
                             "💧 ${Fmt.percent(day.precipProbabilityMax, st.lang)}",
-                            color = Color(0xFFB3E5FC), fontSize = 11.5.sp,
+                            color = Luna.Blue, fontSize = 11.5.sp,
                         )
                     }
                     Text(
                         "${Fmt.temp(day.tempMin, st)}  ",
-                        color = Color.White.copy(alpha = 0.8f), fontSize = 13.5.sp,
+                        color = Luna.Content.copy(alpha = 0.8f), fontSize = 13.5.sp,
                     )
                     TempBar(day.tempMin, day.tempMax, report.daily.minOf { it.tempMin }, report.daily.maxOf { it.tempMax })
                     Text(
                         "  ${Fmt.temp(day.tempMax, st)}",
-                        color = Color.White, fontSize = 13.5.sp, fontWeight = FontWeight.Medium,
+                        color = Luna.Content, fontSize = 13.5.sp, fontWeight = FontWeight.Medium,
                     )
-                    Text(if (isOpen) " ▲" else " ▼", color = Color.White.copy(alpha = 0.7f), fontSize = 11.sp)
+                    Text(if (isOpen) " ▲" else " ▼", color = Luna.Content.copy(alpha = 0.7f), fontSize = 11.sp)
                 }
                 if (isOpen) {
                     DayDetail(day, st)
                 }
             }
             if (idx < report.daily.lastIndex) {
-                Box(Modifier.fillMaxWidth().height(1.dp).background(Color.White.copy(alpha = 0.14f)))
+                Box(Modifier.fillMaxWidth().height(1.dp).background(Luna.Content.copy(alpha = 0.14f)))
             }
         }
     }
@@ -259,10 +260,10 @@ internal fun DayDetail(day: DayForecast, st: AppSettings) {
         modifier = Modifier
             .fillMaxWidth()
             .padding(top = 6.dp)
-            .background(Color.White.copy(alpha = 0.10f), RoundedCornerShape(12.dp))
+            .background(Luna.Content.copy(alpha = 0.10f), RoundedCornerShape(12.dp))
             .padding(12.dp),
     ) {
-        Text(Insights.daySummary(day, st), color = Color.White, fontSize = 13.sp)
+        Text(Insights.daySummary(day, st), color = Luna.Content, fontSize = 13.sp)
         Spacer(Modifier.height(8.dp))
         val rows = listOf(
             "🌧️ ${s.ddPrecip}" to Fmt.precip(day.precipSumMm, st),
@@ -278,7 +279,7 @@ internal fun DayDetail(day: DayForecast, st: AppSettings) {
             for (row in rows.chunked(2)) {
                 Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     for ((k, v) in row) {
-                        Text("$k: $v", color = Color.White.copy(alpha = 0.95f), fontSize = 12.5.sp, modifier = Modifier.weight(1f))
+                        Text("$k: $v", color = Luna.Content.copy(alpha = 0.95f), fontSize = 12.5.sp, modifier = Modifier.weight(1f))
                     }
                     if (row.size == 1) Spacer(Modifier.weight(1f))
                 }
@@ -302,7 +303,7 @@ internal fun ScoreRing(score: Int, emoji: String, animated: Boolean) {
     Box(Modifier.size(64.dp), contentAlignment = Alignment.Center) {
         Canvas(Modifier.fillMaxSize()) {
             drawArc(
-                color = Color.White.copy(alpha = 0.18f),
+                color = Luna.Content.copy(alpha = 0.18f),
                 startAngle = -90f, sweepAngle = 360f, useCenter = false,
                 style = Stroke(width = 7f, cap = StrokeCap.Round),
             )
@@ -318,8 +319,8 @@ internal fun ScoreRing(score: Int, emoji: String, animated: Boolean) {
 
 @Composable
 internal fun SectionTitle(text: String) {
-    Text(text, color = Color.White, fontSize = 15.5.sp, fontWeight = FontWeight.Bold)
-    Spacer(Modifier.height(8.dp))
+    Text(text, color = Luna.Content, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 0.3.sp)
+    Spacer(Modifier.height(9.dp))
 }
 
 @Composable
@@ -343,7 +344,7 @@ internal fun TempBar(min: Double, max: Double, globalMin: Double, globalMax: Dou
             .width(64.dp)
             .height(6.dp),
     ) {
-        drawLine(Color.White.copy(alpha = 0.2f), Offset(0f, size.height / 2), Offset(size.width, size.height / 2), strokeWidth = 6f, cap = StrokeCap.Round)
+        drawLine(Luna.Content.copy(alpha = 0.2f), Offset(0f, size.height / 2), Offset(size.width, size.height / 2), strokeWidth = 6f, cap = StrokeCap.Round)
         drawLine(
             brush = Brush.horizontalGradient(listOf(Color(0xFF4FC3F7), Color(0xFFFFB74D))),
             start = Offset(size.width * start, size.height / 2),

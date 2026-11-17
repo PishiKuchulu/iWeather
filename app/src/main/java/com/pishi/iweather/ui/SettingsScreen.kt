@@ -57,6 +57,7 @@ import com.pishi.iweather.util.Lang
 import com.pishi.iweather.util.PrecipUnit
 import com.pishi.iweather.util.PressureUnit
 import com.pishi.iweather.util.TempUnit
+import com.pishi.iweather.util.ThemeMode
 import com.pishi.iweather.util.VisUnit
 import com.pishi.iweather.util.WindUnit
 import com.pishi.iweather.util.strings
@@ -100,16 +101,16 @@ fun SettingsScreen(
             Spacer(Modifier.height(8.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
                 IconButton(onClick = onBack) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = s.back, tint = Color.White)
+                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = s.back, tint = Luna.Content)
                 }
-                Text("⚙️ ${s.settings}", color = Color.White, fontSize = 21.sp, fontWeight = FontWeight.Bold)
+                Text("⚙️ ${s.settings}", color = Luna.Content, fontSize = 21.sp, fontWeight = FontWeight.Bold)
             }
             Spacer(Modifier.height(8.dp))
 
             // ---- General / language ----
             SettingsCard {
                 SectionTitle2("🌐 ${s.sGeneral}")
-                Text(s.sLanguage, color = Color.White, fontSize = 14.sp)
+                Text(s.sLanguage, color = Luna.Content, fontSize = 14.sp)
                 Spacer(Modifier.height(6.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     FilterChip(
@@ -161,6 +162,11 @@ fun SettingsScreen(
             // ---- Appearance ----
             SettingsCard {
                 SectionTitle2("🎨 ${s.sAppearance}")
+                UnitRow(s.sTheme) {
+                    Chip(s.sThemeAuto, st.themeMode == ThemeMode.AUTO) { onUpdateSettings { it.copy(themeMode = ThemeMode.AUTO) } }
+                    Chip(s.sThemeDay, st.themeMode == ThemeMode.DAY) { onUpdateSettings { it.copy(themeMode = ThemeMode.DAY) } }
+                    Chip(s.sThemeNight, st.themeMode == ThemeMode.NIGHT) { onUpdateSettings { it.copy(themeMode = ThemeMode.NIGHT) } }
+                }
                 SwitchRow(s.sDynamicSky, s.sDynamicSkyDesc, st.dynamicSky) { v ->
                     onUpdateSettings { it.copy(dynamicSky = v) }
                 }
@@ -190,7 +196,7 @@ fun SettingsScreen(
                 SwitchRow(s.sNotifEnable, s.sNotifEnableDesc, st.notifEnabled) { v -> onNotifToggle(v) }
                 if (st.notifEnabled) {
                     Spacer(Modifier.height(6.dp))
-                    Text(s.sNotifTypes, color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Medium)
+                    Text(s.sNotifTypes, color = Luna.Content, fontSize = 14.sp, fontWeight = FontWeight.Medium)
                     Spacer(Modifier.height(6.dp))
                     FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                         for ((type, label) in alertTypeLabels(s)) {
@@ -208,7 +214,7 @@ fun SettingsScreen(
                         }
                     }
                     Spacer(Modifier.height(8.dp))
-                    Text(s.sThresholds, color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Medium)
+                    Text(s.sThresholds, color = Luna.Content, fontSize = 14.sp, fontWeight = FontWeight.Medium)
                     StepperRow(s.sThTempHigh, st.thTempHigh, 30..45, st) { v ->
                         onUpdateSettings { it.copy(thTempHigh = v) }
                     }
@@ -257,7 +263,7 @@ fun SettingsScreen(
             SettingsCard {
                 SectionTitle2("🛰️ ${s.sData}")
                 InfoRow(s.sProvider, s.sProviderName)
-                Text(s.sAirSource, color = Color.White.copy(alpha = 0.85f), fontSize = 12.5.sp)
+                Text(s.sAirSource, color = Luna.Content.copy(alpha = 0.85f), fontSize = 12.5.sp)
                 Spacer(Modifier.height(6.dp))
                 val lastFetchText = if (lastFetchMillis == 0L) s.sNever
                 else Fmt.num(
@@ -285,13 +291,13 @@ fun SettingsScreen(
             // ---- Widgets ----
             SettingsCard {
                 SectionTitle2("🧩 ${s.sWidgets}")
-                Text(s.sWidgetsBody, color = Color.White.copy(alpha = 0.92f), fontSize = 13.sp)
+                Text(s.sWidgetsBody, color = Luna.Content.copy(alpha = 0.92f), fontSize = 13.sp)
             }
 
             // ---- Privacy ----
             SettingsCard {
                 SectionTitle2("🔒 ${s.sPrivacy}")
-                Text(s.sPrivacyBody, color = Color.White.copy(alpha = 0.92f), fontSize = 13.sp)
+                Text(s.sPrivacyBody, color = Luna.Content.copy(alpha = 0.92f), fontSize = 13.sp)
                 Spacer(Modifier.height(8.dp))
                 OutlinedButton(onClick = { confirmClearData = true }) { Text(s.sClearData) }
             }
@@ -309,8 +315,8 @@ fun SettingsScreen(
                     runCatching { context.startActivity(intent) }
                 }) { Text(s.sCheckUpdate) }
                 Spacer(Modifier.height(8.dp))
-                Text(s.sSources, color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Medium)
-                Text(s.sSourcesBody, color = Color.White.copy(alpha = 0.92f), fontSize = 12.5.sp)
+                Text(s.sSources, color = Luna.Content, fontSize = 14.sp, fontWeight = FontWeight.Medium)
+                Text(s.sSourcesBody, color = Luna.Content.copy(alpha = 0.92f), fontSize = 12.5.sp)
                 Spacer(Modifier.height(10.dp))
                 OutlinedButton(onClick = { confirmReset = true }) { Text(s.sReset) }
             }
@@ -378,14 +384,14 @@ private fun SettingsCard(content: @Composable () -> Unit) {
 
 @Composable
 private fun SectionTitle2(text: String) {
-    Text(text, color = Color.White, fontSize = 15.5.sp, fontWeight = FontWeight.Bold)
+    Text(text, color = Luna.Content, fontSize = 15.5.sp, fontWeight = FontWeight.Bold)
     Spacer(Modifier.height(10.dp))
 }
 
 @Composable
 private fun UnitRow(label: String, chips: @Composable () -> Unit) {
     Column(Modifier.padding(vertical = 5.dp)) {
-        Text(label, color = Color.White.copy(alpha = 0.9f), fontSize = 13.5.sp)
+        Text(label, color = Luna.Content.copy(alpha = 0.9f), fontSize = 13.5.sp)
         Spacer(Modifier.height(4.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) { chips() }
     }
@@ -405,9 +411,9 @@ private fun SwitchRow(title: String, desc: String?, checked: Boolean, onChange: 
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Column(Modifier.weight(1f)) {
-            Text(title, color = Color.White, fontSize = 14.sp)
+            Text(title, color = Luna.Content, fontSize = 14.sp)
             if (!desc.isNullOrBlank()) {
-                Text(desc, color = Color.White.copy(alpha = 0.75f), fontSize = 12.sp)
+                Text(desc, color = Luna.Content.copy(alpha = 0.75f), fontSize = 12.sp)
             }
         }
         Spacer(Modifier.width(10.dp))
@@ -430,12 +436,12 @@ private fun StepperRow(
             .padding(vertical = 3.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(label, color = Color.White.copy(alpha = 0.9f), fontSize = 13.5.sp, modifier = Modifier.weight(1f))
+        Text(label, color = Luna.Content.copy(alpha = 0.9f), fontSize = 13.5.sp, modifier = Modifier.weight(1f))
         TextButton(
             onClick = { onChange((value - step).coerceIn(range)) },
             enabled = value > range.first,
         ) { Text("−", fontSize = 18.sp) }
-        Text(Fmt.num(value, st.lang), color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.Bold)
+        Text(Fmt.num(value, st.lang), color = Luna.Content, fontSize = 15.sp, fontWeight = FontWeight.Bold)
         TextButton(
             onClick = { onChange((value + step).coerceIn(range)) },
             enabled = value < range.last,
@@ -450,7 +456,7 @@ private fun InfoRow(label: String, value: String) {
             .fillMaxWidth()
             .padding(vertical = 3.dp),
     ) {
-        Text(label, color = Color.White.copy(alpha = 0.85f), fontSize = 13.sp, modifier = Modifier.weight(1f))
-        Text(value, color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Medium)
+        Text(label, color = Luna.Content.copy(alpha = 0.85f), fontSize = 13.sp, modifier = Modifier.weight(1f))
+        Text(value, color = Luna.Content, fontSize = 13.sp, fontWeight = FontWeight.Medium)
     }
 }

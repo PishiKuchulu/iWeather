@@ -14,52 +14,104 @@ import androidx.compose.ui.unit.dp
 import com.pishi.iweather.data.SkyKind
 
 /**
- * iWeather "Luna" palette — deep indigo night, lavender glass, cyan/teal accents.
- * Every colour used by the screens lives here so the look can be tuned in one place.
+ * iWeather "Luna" palettes — one hue family, two moods.
+ * Night: deep indigo, lavender glass, cyan/teal accents (the original look).
+ * Day: airy sky-lavender glass with deep indigo ink.
+ * Every colour used by the screens is read through [Luna], whose getters delegate to the
+ * palette [IWeatherTheme] activates, so a theme switch re-skins the whole UI in one place.
+ * [Luna.Content] is the foreground for text/icons drawn on glass surfaces: white at night,
+ * deep indigo by day — never hardcode Color.White on a card.
  */
+data class LunaPalette(
+    val Bg: Color, val BgDeep: Color,
+    val CardTop: Color, val CardBottom: Color,
+    val StrokeA: Color, val StrokeB: Color, val StrokeC: Color,
+    val StrokeCyanA: Color, val StrokeCyanB: Color, val StrokeCyanC: Color,
+    val Text: Color, val TextSoft: Color, val TextMuted: Color, val TextDim: Color,
+    val NavIdle: Color, val Content: Color,
+    val Lavender: Color, val Violet: Color, val VioletLight: Color,
+    val Teal: Color, val Pink: Color, val Lilac: Color, val Blue: Color,
+    val Cyan: Color, val Gold: Color,
+    val RingA: Color, val RingB: Color, val RingC: Color, val RingD: Color,
+    val IconBoxA: Color, val IconBoxB: Color,
+)
+
+val NightPalette = LunaPalette(
+    Bg = Color(0xFF090A22), BgDeep = Color(0xFF05060F),
+    CardTop = Color(0xFF262063).copy(alpha = 0.72f), CardBottom = Color(0xFF0F0D30).copy(alpha = 0.86f),
+    StrokeA = Color(0xFFCDBCFF).copy(alpha = 0.72f), StrokeB = Color(0xFF6F5CD8).copy(alpha = 0.30f), StrokeC = Color(0xFFB3A4FF).copy(alpha = 0.58f),
+    StrokeCyanA = Color(0xFF8FE3FF).copy(alpha = 0.78f), StrokeCyanB = Color(0xFF4F8FE8).copy(alpha = 0.36f), StrokeCyanC = Color(0xFF7FD6FF).copy(alpha = 0.68f),
+    Text = Color(0xFFF0EDFF), TextSoft = Color(0xFFD9D3F5), TextMuted = Color(0xFF9B95CD), TextDim = Color(0xFFA9A3D6),
+    NavIdle = Color(0xFFB4ADDF), Content = Color.White,
+    Lavender = Color(0xFFB9A9F5), Violet = Color(0xFF7D62F2), VioletLight = Color(0xFFB992F6),
+    Teal = Color(0xFF2FE0C8), Pink = Color(0xFFF472D0), Lilac = Color(0xFFB39DFF), Blue = Color(0xFF4DA3FF),
+    Cyan = Color(0xFF22E6D9), Gold = Color(0xFFFFD76A),
+    RingA = Color(0xFFDBBFFF), RingB = Color(0xFFA98CFF), RingC = Color(0xFF6FA6FF), RingD = Color(0xFF4FD0FF),
+    IconBoxA = Color(0xFF3A2FA0).copy(alpha = 0.90f), IconBoxB = Color(0xFF1C1659).copy(alpha = 0.95f),
+)
+
+val DayPalette = LunaPalette(
+    Bg = Color(0xFFDCE9F8), BgDeep = Color(0xFFC7DCF3),
+    CardTop = Color(0xFFFFFFFF).copy(alpha = 0.78f), CardBottom = Color(0xFFE9F1FD).copy(alpha = 0.90f),
+    StrokeA = Color(0xFF7D62F2).copy(alpha = 0.50f), StrokeB = Color(0xFF7D62F2).copy(alpha = 0.26f), StrokeC = Color(0xFF9B7EDE).copy(alpha = 0.45f),
+    StrokeCyanA = Color(0xFF1D7FB8).copy(alpha = 0.55f), StrokeCyanB = Color(0xFF1D7FB8).copy(alpha = 0.28f), StrokeCyanC = Color(0xFF1D7FB8).copy(alpha = 0.45f),
+    Text = Color(0xFF191938), TextSoft = Color(0xFF2A2A52), TextMuted = Color(0xFF5B5E8C), TextDim = Color(0xFF4C4F78),
+    NavIdle = Color(0xFF4C4F78), Content = Color(0xFF191938),
+    Lavender = Color(0xFF6A4FD0), Violet = Color(0xFF7D62F2), VioletLight = Color(0xFF8A63E8),
+    Teal = Color(0xFF0DA58F), Pink = Color(0xFFD63FA8), Lilac = Color(0xFF7A5CFF), Blue = Color(0xFF2B7CD3),
+    Cyan = Color(0xFF0FA3A3), Gold = Color(0xFFD9930D),
+    RingA = Color(0xFFB07FE8), RingB = Color(0xFF8A63E8), RingC = Color(0xFF4A86E8), RingD = Color(0xFF1FA8D8),
+    IconBoxA = Color(0xFF7D62F2).copy(alpha = 0.26f), IconBoxB = Color(0xFF4A3FB8).copy(alpha = 0.16f),
+)
+
+/** Active-palette facade: existing `Luna.X` call sites keep working; values follow the theme. */
 object Luna {
-    val Bg = Color(0xFF090A22)
-    val BgDeep = Color(0xFF05060F)
-
-    val CardTop = Color(0xFF262063).copy(alpha = 0.72f)
-    val CardBottom = Color(0xFF0F0D30).copy(alpha = 0.86f)
-    val StrokeA = Color(0xFFCDBCFF).copy(alpha = 0.80f)
-    val StrokeB = Color(0xFF6F5CD8).copy(alpha = 0.32f)
-    val StrokeC = Color(0xFFB3A4FF).copy(alpha = 0.65f)
-    val StrokeCyanA = Color(0xFF8FE3FF).copy(alpha = 0.85f)
-    val StrokeCyanB = Color(0xFF4F8FE8).copy(alpha = 0.40f)
-    val StrokeCyanC = Color(0xFF7FD6FF).copy(alpha = 0.75f)
-
-    val Text = Color(0xFFF0EDFF)
-    val TextSoft = Color(0xFFD9D3F5)
-    val TextMuted = Color(0xFF9B95CD)
-    val TextDim = Color(0xFFA9A3D6)
-    val NavIdle = Color(0xFFB4ADDF)
-
-    val Lavender = Color(0xFFB9A9F5)
-    val Violet = Color(0xFF7D62F2)
-    val VioletLight = Color(0xFFB992F6)
-    val Teal = Color(0xFF2FE0C8)
-    val Pink = Color(0xFFF472D0)
-    val Lilac = Color(0xFFB39DFF)
-    val Blue = Color(0xFF4DA3FF)
-    val Cyan = Color(0xFF22E6D9)
-    val Gold = Color(0xFFFFD76A)
-
-    val RingA = Color(0xFFDBBFFF)
-    val RingB = Color(0xFFA98CFF)
-    val RingC = Color(0xFF6FA6FF)
-    val RingD = Color(0xFF4FD0FF)
-
-    val IconBoxA = Color(0xFF3A2FA0).copy(alpha = 0.90f)
-    val IconBoxB = Color(0xFF1C1659).copy(alpha = 0.95f)
+    internal var palette: LunaPalette = NightPalette
+    val Bg: Color get() = palette.Bg
+    val BgDeep: Color get() = palette.BgDeep
+    val CardTop: Color get() = palette.CardTop
+    val CardBottom: Color get() = palette.CardBottom
+    val StrokeA: Color get() = palette.StrokeA
+    val StrokeB: Color get() = palette.StrokeB
+    val StrokeC: Color get() = palette.StrokeC
+    val StrokeCyanA: Color get() = palette.StrokeCyanA
+    val StrokeCyanB: Color get() = palette.StrokeCyanB
+    val StrokeCyanC: Color get() = palette.StrokeCyanC
+    val Text: Color get() = palette.Text
+    val TextSoft: Color get() = palette.TextSoft
+    val TextMuted: Color get() = palette.TextMuted
+    val TextDim: Color get() = palette.TextDim
+    val NavIdle: Color get() = palette.NavIdle
+    val Content: Color get() = palette.Content
+    val Lavender: Color get() = palette.Lavender
+    val Violet: Color get() = palette.Violet
+    val VioletLight: Color get() = palette.VioletLight
+    val Teal: Color get() = palette.Teal
+    val Pink: Color get() = palette.Pink
+    val Lilac: Color get() = palette.Lilac
+    val Blue: Color get() = palette.Blue
+    val Cyan: Color get() = palette.Cyan
+    val Gold: Color get() = palette.Gold
+    val RingA: Color get() = palette.RingA
+    val RingB: Color get() = palette.RingB
+    val RingC: Color get() = palette.RingC
+    val RingD: Color get() = palette.RingD
+    val IconBoxA: Color get() = palette.IconBoxA
+    val IconBoxB: Color get() = palette.IconBoxB
 }
 
-private val Scheme = darkColorScheme(
-    primary = Luna.VioletLight,
+/** True when the effective UI mood is the dark (night) palette. */
+fun themeIsDark(mode: com.pishi.iweather.util.ThemeMode, isDay: Boolean): Boolean = when (mode) {
+    com.pishi.iweather.util.ThemeMode.DAY -> false
+    com.pishi.iweather.util.ThemeMode.NIGHT -> true
+    com.pishi.iweather.util.ThemeMode.AUTO -> !isDay
+}
+
+private val DarkScheme = darkColorScheme(
+    primary = NightPalette.VioletLight,
     onPrimary = Color(0xFF1A1050),
-    secondary = Luna.Cyan,
-    background = Luna.Bg,
+    secondary = NightPalette.Cyan,
+    background = NightPalette.Bg,
     surface = Color(0xFF14123A),
     surfaceVariant = Color(0xFF1C1858),
     secondaryContainer = Color(0xFF3A2FA0),
@@ -68,14 +120,39 @@ private val Scheme = darkColorScheme(
     onPrimaryContainer = Color.White,
     onBackground = Color.White,
     onSurface = Color.White,
-    onSurfaceVariant = Luna.TextDim,
+    onSurfaceVariant = NightPalette.TextDim,
     outline = Color(0x99B3A4FF),
     outlineVariant = Color(0x55B3A4FF),
 )
 
+private val LightScheme = androidx.compose.material3.lightColorScheme(
+    primary = DayPalette.Violet,
+    onPrimary = Color.White,
+    secondary = DayPalette.Cyan,
+    background = DayPalette.Bg,
+    surface = Color(0xFFF4F8FE),
+    surfaceVariant = Color(0xFFE2ECFA),
+    secondaryContainer = Color(0xFFD9CFFB),
+    onSecondaryContainer = Color(0xFF2A1B6B),
+    primaryContainer = Color(0xFFD9CFFB),
+    onPrimaryContainer = Color(0xFF2A1B6B),
+    onBackground = DayPalette.Text,
+    onSurface = DayPalette.Text,
+    onSurfaceVariant = DayPalette.TextDim,
+    outline = Color(0x8A7D62F2),
+    outlineVariant = Color(0x4D7D62F2),
+)
+
 @Composable
-fun IWeatherTheme(content: @Composable () -> Unit) {
-    MaterialTheme(colorScheme = Scheme, content = content)
+fun IWeatherTheme(
+    mode: com.pishi.iweather.util.ThemeMode = com.pishi.iweather.util.ThemeMode.AUTO,
+    isDay: Boolean = false,
+    content: @Composable () -> Unit,
+) {
+    val dark = themeIsDark(mode, isDay)
+    // Set before MaterialTheme composes its children: every Luna.* read below follows.
+    Luna.palette = if (dark) NightPalette else DayPalette
+    MaterialTheme(colorScheme = if (dark) DarkScheme else LightScheme, content = content)
 }
 
 /** Glass surface: translucent indigo gradient + luminous lavender border (cyan variant for emphasis). */
@@ -88,7 +165,7 @@ fun Modifier.lunaGlass(radius: Dp = 26.dp, cyan: Boolean = false): Modifier {
     }
     return this
         .background(Brush.linearGradient(listOf(Luna.CardTop, Luna.CardBottom)), shape)
-        .border(1.2.dp, border, shape)
+        .border(0.9.dp, border, shape)
 }
 
 // ---- Legacy sky-kind helpers (still used for widget colours / insight logic) ----

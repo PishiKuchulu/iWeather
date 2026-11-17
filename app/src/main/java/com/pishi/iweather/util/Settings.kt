@@ -4,6 +4,8 @@ import android.content.Context
 import kotlin.math.roundToInt
 
 enum class Lang { FA, EN }
+/** UI theme: AUTO follows the current location's day/night; DAY/NIGHT force a palette. */
+enum class ThemeMode { AUTO, DAY, NIGHT }
 enum class TempUnit { C, F }
 enum class WindUnit { KMH, MS, MPH, KN }
 enum class PressureUnit { HPA, MBAR, MMHG, INHG }
@@ -29,6 +31,7 @@ data class AppSettings(
     val visUnit: VisUnit = VisUnit.KM,
     val time24: Boolean = true,
     val dynamicSky: Boolean = true,
+    val themeMode: ThemeMode = ThemeMode.AUTO,
     val animations: Boolean = true,
     val compact: Boolean = false,
     val aqiStandard: AqiStandard = AqiStandard.US,
@@ -70,6 +73,7 @@ class SettingsStore(context: Context) {
             visUnit = enumVal("set_vis_unit", VisUnit.KM, VisUnit.entries.toTypedArray()),
             time24 = prefs.getBoolean("set_time24", true),
             dynamicSky = prefs.getBoolean("set_dynamic_sky", true),
+            themeMode = enumVal("set_theme_mode", ThemeMode.AUTO, ThemeMode.entries.toTypedArray()),
             animations = prefs.getBoolean("set_animations", true),
             compact = prefs.getBoolean("set_compact", false),
             aqiStandard = enumVal("set_aqi_std", AqiStandard.US, AqiStandard.entries.toTypedArray()),
@@ -100,6 +104,7 @@ class SettingsStore(context: Context) {
             .putString("set_vis_unit", s.visUnit.name)
             .putBoolean("set_time24", s.time24)
             .putBoolean("set_dynamic_sky", s.dynamicSky)
+            .putString("set_theme_mode", s.themeMode.name)
             .putBoolean("set_animations", s.animations)
             .putBoolean("set_compact", s.compact)
             .putString("set_aqi_std", s.aqiStandard.name)

@@ -112,6 +112,9 @@ fun HomeScreen(
     onNotifToggle: (Boolean) -> Unit,
     onBriefToggle: (Boolean) -> Unit,
     onToggleFavorite: () -> Unit,
+    onToggleFavoriteCity: (City) -> Unit,
+    onAddFavorite: (City) -> Unit,
+    onMoveFavorite: (City, Boolean) -> Unit,
     onRemoveFavorite: (City) -> Unit,
     onRefreshFavorites: () -> Unit,
     lastFetchMillis: Long,
@@ -147,6 +150,8 @@ fun HomeScreen(
                     onMyLocation = onMyLocation,
                     onOpenSettings = onOpenSettings,
                     onToggleFavorite = onToggleFavorite,
+                    onToggleFavoriteCity = onToggleFavoriteCity,
+                    onMoveFavorite = onMoveFavorite,
                     onRemoveFavorite = onRemoveFavorite,
                     onRefreshFavorites = onRefreshFavorites,
                 )
@@ -160,6 +165,7 @@ fun HomeScreen(
                 "fav_added" -> s.favAdded
                 "fav_removed" -> s.favRemoved
                 "fav_limit" -> s.favLimit
+                "fav_exists" -> s.favExists
                 else -> null
             }
             LaunchedEffect(state.message) {
@@ -222,6 +228,8 @@ private fun HomeContent(
     onMyLocation: () -> Unit,
     onOpenSettings: () -> Unit,
     onToggleFavorite: () -> Unit,
+    onToggleFavoriteCity: (City) -> Unit,
+    onMoveFavorite: (City, Boolean) -> Unit,
     onRemoveFavorite: (City) -> Unit,
     onRefreshFavorites: () -> Unit,
 ) {
@@ -253,7 +261,7 @@ private fun HomeContent(
             ) {
                 Text("📡", fontSize = 44.sp)
                 Spacer(Modifier.height(10.dp))
-                Text(s.errorTitle, color = Color.White, fontSize = 19.sp, fontWeight = FontWeight.Bold)
+                Text(s.errorTitle, color = Luna.Content, fontSize = 19.sp, fontWeight = FontWeight.Bold)
                 Spacer(Modifier.height(6.dp))
                 Text(s.errorBody, color = Luna.TextSoft, textAlign = TextAlign.Center)
                 Spacer(Modifier.height(16.dp))
@@ -279,6 +287,8 @@ private fun HomeContent(
                     showCities = false
                     onSelectCity(city)
                 },
+                onToggleFavoriteCity = onToggleFavoriteCity,
+                onMoveFavorite = onMoveFavorite,
                 onRemoveFavorite = onRemoveFavorite,
                 onRefreshFavorites = onRefreshFavorites,
                 onClose = { showCities = false },
@@ -290,6 +300,7 @@ private fun HomeContent(
                 state = state,
                 onQueryChange = onQueryChange,
                 onSelectCity = onSelectCity,
+                onToggleFavoriteCity = onToggleFavoriteCity,
                 onClose = { onSearchToggle(false) },
             )
         }
@@ -321,7 +332,7 @@ private fun ReportContent(
     val listState = rememberLazyListState()
     val scope = rememberCoroutineScope()
     val navBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
-    val side = Modifier.padding(horizontal = 18.dp)
+    val side = Modifier.padding(horizontal = 20.dp)
     val anim = st.animations
 
     Box(Modifier.fillMaxSize()) {
@@ -367,10 +378,10 @@ private fun ReportContent(
                 GlassCard(side) {
                     SectionTitle(s.alertsTitle)
                     if (alerts.isEmpty()) {
-                        Text(s.noAlerts, color = Color.White, fontSize = 14.sp)
+                        Text(s.noAlerts, color = Luna.Content, fontSize = 14.sp)
                     } else {
                         for (a in alerts) {
-                            Text("${a.emoji} ${a.text}", color = Color.White, fontSize = 13.5.sp, modifier = Modifier.padding(vertical = 2.dp))
+                            Text("${a.emoji} ${a.text}", color = Luna.Content, fontSize = 13.5.sp, modifier = Modifier.padding(vertical = 2.dp))
                         }
                     }
                 }
@@ -400,8 +411,8 @@ private fun ReportContent(
                                         modifier = Modifier.weight(1f),
                                     ) {
                                         ScoreRing(a.score, a.emoji, anim)
-                                        Text(a.title, color = Color.White, fontSize = 12.5.sp, fontWeight = FontWeight.Medium)
-                                        Text(a.note, color = Color.White.copy(alpha = 0.8f), fontSize = 10.5.sp, textAlign = TextAlign.Center)
+                                        Text(a.title, color = Luna.Content, fontSize = 12.5.sp, fontWeight = FontWeight.Medium)
+                                        Text(a.note, color = Luna.Content.copy(alpha = 0.8f), fontSize = 10.5.sp, textAlign = TextAlign.Center)
                                     }
                                 }
                             }
@@ -509,7 +520,7 @@ private fun LunaHero(
                 Modifier
                     .fillMaxWidth()
                     .aspectRatio(1104f / 660f)
-                    .background(Brush.verticalGradient(listOf(Color(0xFF1B1360), Luna.Bg))),
+                    .background(Brush.verticalGradient(listOf(Luna.BgDeep, Luna.Bg))),
             )
         }
         // Soft scrim on the text side keeps the copy readable over bright day scenes.
@@ -588,7 +599,7 @@ private fun LunaHero(
                 )
                 Text(
                     mood,
-                    color = Color(0xFFB4AEDC), fontSize = 14.sp, lineHeight = 20.sp,
+                    color = Luna.Lavender, fontSize = 14.sp, lineHeight = 20.sp,
                     maxLines = 4, overflow = TextOverflow.Ellipsis,
                 )
             }
@@ -622,7 +633,7 @@ private fun LunaScoreCard(report: WeatherReport, st: AppSettings, s: AppStrings,
     ) {
         LunaRing(progress = comfort / 100f, animated = st.animations, modifier = Modifier.size(116.dp)) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(Fmt.temp(cur.temperature, st), color = Color.White, fontSize = 34.sp, fontWeight = FontWeight.Light)
+                Text(Fmt.temp(cur.temperature, st), color = Luna.Content, fontSize = 34.sp, fontWeight = FontWeight.Light)
                 Text("${s.feelsLike} ${Fmt.temp(cur.feelsLike, st)}", color = Luna.TextSoft, fontSize = 11.sp)
                 if (comfort >= 85) {
                     Spacer(Modifier.height(2.dp))
@@ -700,7 +711,7 @@ private fun LunaStat(
         LIcon(path, Luna.Lavender, iconSize = 26.dp, strokeWidth = 1.5f)
         Spacer(Modifier.height(10.dp))
         Text(label, color = Luna.TextDim, fontSize = 11.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
-        Text(value, color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Medium, lineHeight = 17.sp)
+        Text(value, color = Luna.Content, fontSize = 14.sp, fontWeight = FontWeight.Medium, lineHeight = 17.sp)
         Spacer(Modifier.height(4.dp))
         Text(sub, color = subColor, fontSize = 11.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
     }
@@ -721,7 +732,7 @@ private fun LunaWaveCard(report: WeatherReport, st: AppSettings, s: AppStrings) 
     Column(Modifier.fillMaxWidth().lunaGlass(30.dp).padding(16.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             LunaIconBox(boxSize = 44.dp) {
-                LIcon(LunaPaths.SPARKLES, Color(0xFFE3DCFF), iconSize = 24.dp, strokeWidth = 1.5f, fill = Color(0x40CBBFFF))
+                LIcon(LunaPaths.SPARKLES, Luna.Lavender, iconSize = 24.dp, strokeWidth = 1.5f, fill = Luna.Lavender.copy(alpha = 0.25f))
             }
             Spacer(Modifier.width(12.dp))
             Column(Modifier.weight(1f)) {
@@ -730,7 +741,7 @@ private fun LunaWaveCard(report: WeatherReport, st: AppSettings, s: AppStrings) 
             }
             Text(
                 "${Fmt.temp(lo, st)} – ${Fmt.temp(hi, st)}",
-                color = Color.White, fontSize = 19.sp, fontWeight = FontWeight.Medium,
+                color = Luna.Content, fontSize = 19.sp, fontWeight = FontWeight.Medium,
             )
             Box(
                 Modifier.size(38.dp).clickable { long = !long },
@@ -812,7 +823,7 @@ private fun WaveCanvas(hours: List<HourPoint>, modifier: Modifier) {
         // time guides
         for (f in WAVE_GUIDES) {
             drawLine(
-                Color.White.copy(alpha = 0.18f),
+                Luna.Content.copy(alpha = 0.18f),
                 Offset(w * f, 0f), Offset(w * f, h),
                 strokeWidth = 1.dp.toPx(),
                 pathEffect = PathEffect.dashPathEffect(floatArrayOf(3.dp.toPx(), 5.dp.toPx())),
@@ -853,7 +864,7 @@ private fun WaveCanvas(hours: List<HourPoint>, modifier: Modifier) {
         val minIdx = temps.indexOf(temps.min())
         drawCircle(Luna.Pink, 4.dp.toPx(), Offset(px(maxIdx), py(temps[maxIdx])))
         drawCircle(Luna.Cyan, 4.dp.toPx(), Offset(px(minIdx), py(temps[minIdx])))
-        drawCircle(Color.White, 5.dp.toPx(), Offset(px(0), py(temps[0])))
+        drawCircle(Luna.Content, 5.dp.toPx(), Offset(px(0), py(temps[0])))
         drawCircle(Luna.Violet, 5.dp.toPx(), Offset(px(0), py(temps[0])), style = Stroke(width = 2.dp.toPx()))
     }
 }
@@ -907,18 +918,18 @@ private fun HourChip(h: HourPoint, isNow: Boolean, st: AppSettings, s: AppString
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier
-            .background(Color.White.copy(alpha = if (isNow) 0.16f else 0.07f), shape)
+            .background(Luna.Content.copy(alpha = if (isNow) 0.16f else 0.07f), shape)
             .then(
                 if (isNow) Modifier.border(1.dp, Luna.StrokeC, shape) else Modifier,
             )
             .padding(horizontal = 10.dp, vertical = 8.dp),
     ) {
-        Text(Fmt.clock(h.hourLabel, st), color = Color.White.copy(alpha = 0.85f), fontSize = 11.5.sp)
+        Text(Fmt.clock(h.hourLabel, st), color = Luna.Content.copy(alpha = 0.85f), fontSize = 11.5.sp)
         Text(hi.emoji, fontSize = 19.sp)
-        Text(Fmt.temp(h.temperature, st), color = Color.White, fontWeight = FontWeight.Bold, fontSize = 14.sp)
-        Text("${s.feelsLike} ${Fmt.temp(h.feelsLike, st)}", color = Color.White.copy(alpha = 0.75f), fontSize = 10.5.sp)
+        Text(Fmt.temp(h.temperature, st), color = Luna.Content, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+        Text("${s.feelsLike} ${Fmt.temp(h.feelsLike, st)}", color = Luna.Content.copy(alpha = 0.75f), fontSize = 10.5.sp)
         Text("💧 ${Fmt.percent(h.precipProbability, st.lang)}", color = Color(0xFFB3E5FC), fontSize = 11.sp)
-        Text("💨 ${Fmt.wind(h.windSpeed, st)}", color = Color.White.copy(alpha = 0.8f), fontSize = 10.5.sp)
+        Text("💨 ${Fmt.wind(h.windSpeed, st)}", color = Luna.Content.copy(alpha = 0.8f), fontSize = 10.5.sp)
     }
 }
 
@@ -945,11 +956,11 @@ private fun DetailsGrid(report: WeatherReport, st: AppSettings, s: AppStrings) {
                     Column(
                         modifier = Modifier
                             .weight(1f)
-                            .background(Color.White.copy(alpha = 0.08f), RoundedCornerShape(12.dp))
+                            .background(Luna.Content.copy(alpha = 0.08f), RoundedCornerShape(12.dp))
                             .padding(10.dp),
                     ) {
-                        Text(iconLabel, color = Color.White.copy(alpha = 0.85f), fontSize = 12.sp)
-                        Text(value, color = Color.White, fontSize = 13.5.sp, fontWeight = FontWeight.Medium)
+                        Text(iconLabel, color = Luna.Content.copy(alpha = 0.85f), fontSize = 12.sp)
+                        Text(value, color = Luna.Content, fontSize = 13.5.sp, fontWeight = FontWeight.Medium)
                     }
                 }
                 if (row.size == 1) Spacer(Modifier.weight(1f))
@@ -961,7 +972,7 @@ private fun DetailsGrid(report: WeatherReport, st: AppSettings, s: AppStrings) {
 @Composable
 private fun GlassCard(modifier: Modifier = Modifier, content: @Composable () -> Unit) {
     Box(modifier.fillMaxWidth()) {
-        Column(Modifier.fillMaxWidth().lunaGlass(26.dp).padding(16.dp)) { content() }
+        Column(Modifier.fillMaxWidth().lunaGlass(26.dp).padding(18.dp)) { content() }
     }
 }
 
@@ -972,6 +983,8 @@ private fun CitiesOverlay(
     state: IWeatherUiState,
     currentCityName: String,
     onSelectCity: (City) -> Unit,
+    onToggleFavoriteCity: (City) -> Unit,
+    onMoveFavorite: (City, Boolean) -> Unit,
     onRemoveFavorite: (City) -> Unit,
     onRefreshFavorites: () -> Unit,
     onClose: () -> Unit,
@@ -996,9 +1009,9 @@ private fun CitiesOverlay(
                 .padding(18.dp),
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(s.navCities, color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
+                Text(s.navCities, color = Luna.Content, fontSize = 18.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
                 Box(Modifier.size(36.dp).clickable(onClick = onClose), contentAlignment = Alignment.Center) {
-                    Text("✕", color = Color.White, fontSize = 16.sp)
+                    Text("✕", color = Luna.Content, fontSize = 16.sp)
                 }
             }
             Text("${s.currentCity}: $currentCityName", color = Luna.Lavender, fontSize = 13.sp)
@@ -1010,8 +1023,19 @@ private fun CitiesOverlay(
                         Text(s.favoritesEmpty, color = Luna.TextMuted, fontSize = 12.5.sp, modifier = Modifier.padding(vertical = 6.dp))
                     }
                 } else {
-                    items(state.favorites) { city ->
-                        FavoriteRow(city, state.favInfo[favKey(city)], st, { onSelectCity(city) }, { onRemoveFavorite(city) })
+                    itemsIndexed(state.favorites) { idx, city ->
+                        FavoriteRow(
+                            city = city,
+                            info = state.favInfo[favKey(city)],
+                            st = st,
+                            isCurrent = state.report?.city?.let { FavoritesStore.same(it, city) } == true,
+                            canUp = idx > 0,
+                            canDown = idx < state.favorites.lastIndex,
+                            onClick = { onSelectCity(city) },
+                            onRemove = { onRemoveFavorite(city) },
+                            onMoveUp = { onMoveFavorite(city, true) },
+                            onMoveDown = { onMoveFavorite(city, false) },
+                        )
                     }
                 }
                 item {
@@ -1019,7 +1043,11 @@ private fun CitiesOverlay(
                     OverlayHeader(s.popularHeader)
                 }
                 items(POPULAR_IRAN_CITIES) { city ->
-                    CityRow(city, st) { onSelectCity(city) }
+                    CityRow(
+                        city = city, st = st,
+                        isFav = state.favorites.any { FavoritesStore.same(it, city) },
+                        onToggleFav = { onToggleFavoriteCity(city) },
+                    ) { onSelectCity(city) }
                 }
             }
         }
@@ -1036,8 +1064,13 @@ private fun FavoriteRow(
     city: City,
     info: FavInfo?,
     st: AppSettings,
+    isCurrent: Boolean,
+    canUp: Boolean,
+    canDown: Boolean,
     onClick: () -> Unit,
     onRemove: () -> Unit,
+    onMoveUp: () -> Unit,
+    onMoveDown: () -> Unit,
 ) {
     Row(
         modifier = Modifier.fillMaxWidth().clickable(onClick = onClick).padding(vertical = 8.dp),
@@ -1046,12 +1079,39 @@ private fun FavoriteRow(
         Text(info?.let { wmoInfo(it.weatherCode, it.isDay).emoji } ?: "⭐", fontSize = 22.sp)
         Spacer(Modifier.width(10.dp))
         Column(Modifier.weight(1f)) {
-            Text(city.name, color = Color.White, fontSize = 14.5.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(city.name, color = Luna.Content, fontSize = 14.5.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                if (isCurrent) {
+                    Spacer(Modifier.width(6.dp))
+                    Box(Modifier.size(6.dp).background(Luna.Teal, androidx.compose.foundation.shape.CircleShape))
+                }
+            }
             val subtitle = listOf(city.admin1, city.country).filter { it.isNotBlank() }.joinToString(if (st.isFa) "، " else ", ")
             if (subtitle.isNotBlank()) Text(subtitle, color = Luna.TextDim, fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
         if (info != null) {
-            Text(Fmt.temp(info.temperature, st), color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Medium)
+            Text(Fmt.temp(info.temperature, st), color = Luna.Content, fontSize = 18.sp, fontWeight = FontWeight.Medium)
+        }
+        // Reorder within the saved list (order persists and drives this sheet).
+        Column {
+            Box(
+                Modifier.size(26.dp).clickable(enabled = canUp, onClick = onMoveUp),
+                contentAlignment = Alignment.Center,
+            ) {
+                LIcon(
+                    LunaPaths.CHEVRON, if (canUp) Luna.Lavender else Luna.TextMuted.copy(alpha = 0.35f),
+                    modifier = Modifier.graphicsLayer { rotationZ = -90f }, iconSize = 15.dp, strokeWidth = 2f,
+                )
+            }
+            Box(
+                Modifier.size(26.dp).clickable(enabled = canDown, onClick = onMoveDown),
+                contentAlignment = Alignment.Center,
+            ) {
+                LIcon(
+                    LunaPaths.CHEVRON, if (canDown) Luna.Lavender else Luna.TextMuted.copy(alpha = 0.35f),
+                    modifier = Modifier.graphicsLayer { rotationZ = 90f }, iconSize = 15.dp, strokeWidth = 2f,
+                )
+            }
         }
         Box(Modifier.size(40.dp).clickable(onClick = onRemove), contentAlignment = Alignment.Center) {
             LIcon(LunaPaths.STAR, Luna.Gold, iconSize = 20.dp, strokeWidth = 1.6f, fill = Luna.Gold)
@@ -1064,6 +1124,7 @@ private fun SearchOverlay(
     state: IWeatherUiState,
     onQueryChange: (String) -> Unit,
     onSelectCity: (City) -> Unit,
+    onToggleFavoriteCity: (City) -> Unit,
     onClose: () -> Unit,
 ) {
     val st = state.settings
@@ -1085,9 +1146,9 @@ private fun SearchOverlay(
                 .padding(18.dp),
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(s.searchTitle, color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
+                Text(s.searchTitle, color = Luna.Content, fontSize = 18.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
                 Box(Modifier.size(36.dp).clickable(onClick = onClose), contentAlignment = Alignment.Center) {
-                    Text("✕", color = Color.White, fontSize = 16.sp)
+                    Text("✕", color = Luna.Content, fontSize = 16.sp)
                 }
             }
             OutlinedTextField(
@@ -1105,11 +1166,19 @@ private fun SearchOverlay(
                 if (state.query.isBlank()) {
                     item { OverlayHeader(s.popularCities) }
                     items(POPULAR_IRAN_CITIES) { city ->
-                        CityRow(city, st) { onSelectCity(city) }
+                        CityRow(
+                            city = city, st = st,
+                            isFav = state.favorites.any { FavoritesStore.same(it, city) },
+                            onToggleFav = { onToggleFavoriteCity(city) },
+                        ) { onSelectCity(city) }
                     }
                 } else {
                     items(state.searchResults) { city ->
-                        CityRow(city, st) { onSelectCity(city) }
+                        CityRow(
+                            city = city, st = st,
+                            isFav = state.favorites.any { FavoritesStore.same(it, city) },
+                            onToggleFav = { onToggleFavoriteCity(city) },
+                        ) { onSelectCity(city) }
                     }
                     if (!state.searching && state.searchResults.isEmpty() && state.query.trim().length >= 2) {
                         item {
@@ -1123,7 +1192,13 @@ private fun SearchOverlay(
 }
 
 @Composable
-private fun CityRow(city: City, st: AppSettings, onClick: () -> Unit) {
+private fun CityRow(
+    city: City,
+    st: AppSettings,
+    isFav: Boolean = false,
+    onToggleFav: (() -> Unit)? = null,
+    onClick: () -> Unit,
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -1133,12 +1208,23 @@ private fun CityRow(city: City, st: AppSettings, onClick: () -> Unit) {
     ) {
         LIcon(LunaPaths.PIN, Luna.Lavender, iconSize = 18.dp, strokeWidth = 1.7f)
         Spacer(Modifier.width(10.dp))
-        Column {
-            Text(city.name, color = Color.White, fontSize = 14.5.sp)
+        Column(Modifier.weight(1f)) {
+            Text(city.name, color = Luna.Content, fontSize = 14.5.sp)
             val subtitle = listOf(city.admin1, city.country).filter { it.isNotBlank() }
                 .joinToString(if (st.isFa) "، " else ", ")
             if (subtitle.isNotBlank()) {
                 Text(subtitle, color = Luna.TextDim, fontSize = 12.sp)
+            }
+        }
+        // Save/remove this city in the locations list without switching to it.
+        if (onToggleFav != null) {
+            Box(Modifier.size(40.dp).clickable(onClick = onToggleFav), contentAlignment = Alignment.Center) {
+                LIcon(
+                    LunaPaths.STAR,
+                    tint = if (isFav) Luna.Gold else Luna.TextMuted,
+                    iconSize = 19.dp, strokeWidth = 1.6f,
+                    fill = if (isFav) Luna.Gold else null,
+                )
             }
         }
     }

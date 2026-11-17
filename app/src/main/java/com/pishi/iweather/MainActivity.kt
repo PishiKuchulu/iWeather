@@ -64,10 +64,28 @@ class MainActivity : ComponentActivity() {
         val appVersion = runCatching {
             val info = packageManager.getPackageInfo(packageName, 0)
             "${info.versionName} (${PackageInfoCompat.getLongVersionCode(info)})"
-        }.getOrDefault("1.4.0")
+        }.getOrDefault("1.5.0")
         setContent {
-            IWeatherTheme {
-                val state by viewModel.state.collectAsState()
+            val state by viewModel.state.collectAsState()
+            // Day/night for AUTO: the current location's own day flag; before the first report
+            // lands, fall back to this device's clock (06:00–18:59 counts as day).
+            val isDay = state.report?.current?.isDay ?: (java.time.LocalTime.now().hour in 6..18)
+            val dark = com.pishi.iweather.ui.theme.themeIsDark(state.settings.themeMode, isDay)
+            androidx.compose.runtime.SideEffect {
+                enableEdgeToEdge(
+                    statusBarStyle = if (dark) {
+                        SystemBarStyle.dark(android.graphics.Color.TRANSPARENT)
+                    } else {
+                        SystemBarStyle.light(android.graphics.Color.TRANSPARENT, android.graphics.Color.TRANSPARENT)
+                    },
+                    navigationBarStyle = if (dark) {
+                        SystemBarStyle.dark(android.graphics.Color.TRANSPARENT)
+                    } else {
+                        SystemBarStyle.light(android.graphics.Color.TRANSPARENT, android.graphics.Color.TRANSPARENT)
+                    },
+                )
+            }
+            IWeatherTheme(mode = state.settings.themeMode, isDay = isDay) {
                 HomeScreen(
                     state = state,
                     onRefresh = { viewModel.refresh() },
@@ -87,6 +105,9 @@ class MainActivity : ComponentActivity() {
                     onNotifToggle = { enabled -> onNotifToggle(enabled) },
                     onBriefToggle = { enabled -> onBriefToggle(enabled) },
                     onToggleFavorite = { viewModel.toggleFavorite() },
+                    onToggleFavoriteCity = { viewModel.toggleFavorite(it) },
+                    onAddFavorite = { viewModel.addFavorite(it) },
+                    onMoveFavorite = { city, up -> viewModel.moveFavorite(city, up) },
                     onRemoveFavorite = { viewModel.removeFavorite(it) },
                     onRefreshFavorites = { viewModel.refreshFavorites() },
                     lastFetchMillis = state.report?.fetchedAtMillis ?: viewModel.lastFetchMillis(),

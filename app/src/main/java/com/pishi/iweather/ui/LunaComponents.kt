@@ -118,7 +118,7 @@ fun LunaRing(
             val inset = stroke / 2f
             val arc = Size(this.size.width - stroke, this.size.height - stroke)
             drawArc(
-                color = Color.White.copy(alpha = 0.08f),
+                color = Luna.Content.copy(alpha = 0.08f),
                 startAngle = 0f, sweepAngle = 360f, useCenter = false,
                 topLeft = Offset(inset, inset), size = arc,
                 style = Stroke(width = stroke),
@@ -258,7 +258,7 @@ fun RowScope.LunaNavItem(icon: ImageVector, label: String, active: Boolean, onCl
         }
         Text(
             label,
-            color = if (active) Color.White else Luna.NavIdle,
+            color = if (active) Luna.Content else Luna.NavIdle,
             fontSize = 11.sp,
             fontWeight = if (active) FontWeight.Medium else FontWeight.Normal,
             maxLines = 1,
