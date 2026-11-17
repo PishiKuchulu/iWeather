@@ -160,8 +160,12 @@ class MainActivity : ComponentActivity() {
         }
         toast(fa = "در حال پیدا کردن موقعیت…", en = "Finding your location…")
         val fallback = stale
+        // Typed null: LocationManagerCompat has two getCurrentLocation overloads that differ
+        // only in the CancellationSignal type (android.os vs androidx.core.os); a bare null
+        // is ambiguous and the lambda's type cannot be inferred.
+        val cancelSignal: android.os.CancellationSignal? = null
         try {
-            LocationManagerCompat.getCurrentLocation(lm, provider, null, ContextCompat.getMainExecutor(this)) { loc ->
+            LocationManagerCompat.getCurrentLocation(lm, provider, cancelSignal, ContextCompat.getMainExecutor(this)) { loc ->
                 when {
                     loc != null -> viewModel.onMyLocation(loc.latitude, loc.longitude)
                     fallback != null -> viewModel.onMyLocation(fallback.latitude, fallback.longitude)
