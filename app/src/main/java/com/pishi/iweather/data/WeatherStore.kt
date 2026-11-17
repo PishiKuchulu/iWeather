@@ -11,6 +11,14 @@ import java.io.File
 object WeatherStore {
     private const val PREFS = "iweather"
 
+    /**
+     * Every weather cache file lives in this one subdirectory (AUD-003): the caches
+     * are re-fetchable and their per-city names carry coordinates, so the backup
+     * rules exclude the whole directory with a single path.
+     */
+    internal fun cacheFile(context: Context, name: String): File =
+        File(File(context.filesDir, "weather_cache").apply { mkdirs() }, name)
+
     fun savedCity(context: Context): City? {
         val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
         val name = prefs.getString("city_name", null) ?: return null
@@ -69,7 +77,7 @@ object WeatherStore {
     private fun lastCached(context: Context, city: City, api: WeatherApi): WeatherReport? {
         val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
         val fetchedAt = prefs.getLong("cache_fetched_at", 0L)
-        val forecastFile = File(context.filesDir, "last_forecast.json")
+        val forecastFile = cacheFile(context, "last_forecast.json")
         if (fetchedAt == 0L || !forecastFile.exists()) return null
         val cacheLat = if (prefs.contains("cache_lat_bits")) {
             Double.fromBits(prefs.getLong("cache_lat_bits", 0L))
@@ -84,7 +92,7 @@ object WeatherStore {
         if (cacheLat.isNaN() || cacheLon.isNaN()) return null
         if (!samePlace(cacheLat, cacheLon, city.latitude, city.longitude)) return null
         return try {
-            val airFile = File(context.filesDir, "last_air.json")
+            val airFile = cacheFile(context, "last_air.json")
             val air = if (airFile.exists()) airFile.readText() else null
             api.parseReport(city, WeatherApi.RawWeather(forecastFile.readText(), air), fetchedAt)
         } catch (e: Exception) {
@@ -94,8 +102,8 @@ object WeatherStore {
 
     fun saveCache(context: Context, city: City, raw: WeatherApi.RawWeather, fetchedAt: Long) {
         runCatching {
-            File(context.filesDir, "last_forecast.json").writeText(raw.forecastJson)
-            val airFile = File(context.filesDir, "last_air.json")
+            cacheFile(context, "last_forecast.json").writeText(raw.forecastJson)
+            val airFile = cacheFile(context, "last_air.json")
             if (raw.airJson != null) airFile.writeText(raw.airJson) else airFile.delete()
             context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
                 .putLong("cache_fetched_at", fetchedAt)
@@ -112,8 +120,8 @@ object WeatherStore {
 
     fun saveCityCache(context: Context, city: City, raw: WeatherApi.RawWeather, fetchedAt: Long) {
         val key = cityKey(city)
-        File(context.filesDir, "cc_fc_$key.json").writeText(raw.forecastJson)
-        val air = File(context.filesDir, "cc_air_$key.json")
+        cacheFile(context, "cc_fc_$key.json").writeText(raw.forecastJson)
+        val air = cacheFile(context, "cc_air_$key.json")
         if (raw.airJson != null) air.writeText(raw.airJson) else air.delete()
         val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
         prefs.edit().putLong("cc_ts_$key", fetchedAt).apply()
@@ -123,8 +131,8 @@ object WeatherStore {
             val edit = prefs.edit()
             for ((k, _) in stamps.entries.sortedBy { it.value }.take(stamps.size - MAX_CITY_CACHES)) {
                 val old = k.removePrefix("cc_ts_")
-                File(context.filesDir, "cc_fc_$old.json").delete()
-                File(context.filesDir, "cc_air_$old.json").delete()
+                cacheFile(context, "cc_fc_$old.json").delete()
+                cacheFile(context, "cc_air_$old.json").delete()
                 edit.remove(k)
             }
             edit.apply()
@@ -135,10 +143,10 @@ object WeatherStore {
         val key = cityKey(city)
         val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
         val fetchedAt = prefs.getLong("cc_ts_$key", 0L)
-        val fc = File(context.filesDir, "cc_fc_$key.json")
+        val fc = cacheFile(context, "cc_fc_$key.json")
         if (fetchedAt == 0L || !fc.exists()) return null
         return try {
-            val airFile = File(context.filesDir, "cc_air_$key.json")
+            val airFile = cacheFile(context, "cc_air_$key.json")
             val air = if (airFile.exists()) airFile.readText() else null
             api.parseReport(city, WeatherApi.RawWeather(fc.readText(), air), fetchedAt)
         } catch (e: Exception) {
@@ -147,15 +155,15 @@ object WeatherStore {
     }
 
     fun clearCache(context: Context) {
-        File(context.filesDir, "last_forecast.json").delete()
-        File(context.filesDir, "last_air.json").delete()
+        cacheFile(context, "last_forecast.json").delete()
+        cacheFile(context, "last_air.json").delete()
         val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
         val edit = prefs.edit().remove("cache_fetched_at").remove("cache_lat").remove("cache_lon")
             .remove("cache_lat_bits").remove("cache_lon_bits")
         for (k in prefs.all.keys.filter { it.startsWith("cc_ts_") }) {
             val key = k.removePrefix("cc_ts_")
-            File(context.filesDir, "cc_fc_$key.json").delete()
-            File(context.filesDir, "cc_air_$key.json").delete()
+            cacheFile(context, "cc_fc_$key.json").delete()
+            cacheFile(context, "cc_air_$key.json").delete()
             edit.remove(k)
         }
         edit.apply()

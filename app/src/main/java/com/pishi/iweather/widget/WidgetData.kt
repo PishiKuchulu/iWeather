@@ -5,7 +5,6 @@ import com.pishi.iweather.data.City
 import com.pishi.iweather.data.WeatherApi
 import com.pishi.iweather.data.WeatherReport
 import com.pishi.iweather.data.WeatherStore
-import java.io.File
 
 /**
  * Weather data for widgets. The app's own city reuses the shared app cache
@@ -17,10 +16,10 @@ object WidgetData {
     private fun key(city: City): String = WeatherStore.cityKey(city)
 
     private fun forecastFile(context: Context, city: City) =
-        File(context.filesDir, "widget_fc_${key(city)}.json")
+        WeatherStore.cacheFile(context, "widget_fc_${key(city)}.json")
 
     private fun airFile(context: Context, city: City) =
-        File(context.filesDir, "widget_air_${key(city)}.json")
+        WeatherStore.cacheFile(context, "widget_air_${key(city)}.json")
 
     fun save(context: Context, city: City, raw: WeatherApi.RawWeather) {
         runCatching {

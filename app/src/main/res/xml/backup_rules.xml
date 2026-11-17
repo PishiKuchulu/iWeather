@@ -6,12 +6,13 @@
   each domain is included at its root and then carved back:
   - sharedpref: all prefs except the alert dedupe store (in practice the only
     other pref file is "iweather.xml" itself, which stays backed up).
-  - file: include "." + exclude "." nets to "no files at all" (excludes win),
-    which keeps the re-fetchable weather caches out of the backup.
+  - file: the root is included and the single "weather_cache" directory is
+    excluded — every weather cache file lives there (see WeatherStore.cacheFile),
+    so the re-fetchable caches stay out of the backup.
 -->
 <full-backup-content>
     <include domain="sharedpref" path="." />
     <exclude domain="sharedpref" path="iweather_alerts_seen.xml" />
     <include domain="file" path="." />
-    <exclude domain="file" path="." />
+    <exclude domain="file" path="weather_cache" />
 </full-backup-content>
