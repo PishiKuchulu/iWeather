@@ -24,6 +24,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.LayoutDirection
 import com.pishi.iweather.R
 import com.pishi.iweather.data.WeatherReport
+import kotlinx.coroutines.delay
 import kotlin.math.sin
 import kotlin.random.Random
 
@@ -160,6 +161,10 @@ private fun SceneParticles(
         if (animated) {
             while (true) {
                 withFrameMillis { frameMs = it }
+                // AUD-007: ambient particles do not need display rate — capping the
+                // redraw cadence at ~30 fps halves the hero's idle GPU/CPU wakeups.
+                // Motion still derives from the frame clock, so speeds are unchanged.
+                delay(32)
             }
         }
     }

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Legacy (API <= 30) twin of data_extraction_rules.xml — same policy, see that file. -->
+<full-backup-content>
+    <include domain="sharedpref" path="iweather.xml" />
+    <exclude domain="file" path="." />
+    <exclude domain="sharedpref" path="iweather_alerts_seen.xml" />
+</full-backup-content>

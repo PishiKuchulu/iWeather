@@ -25,6 +25,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
@@ -172,9 +174,12 @@ fun LunaRoundButton(
 ) {
     Box(
         modifier = modifier
-            .size(44.dp)
+            .size(48.dp)
             .background(Color(0xFF1A1745).copy(alpha = 0.85f), CircleShape)
             .border(1.3.dp, Luna.StrokeC, CircleShape)
+            // AUD-008: the description parameter exists for exactly this — wire it, so
+            // TalkBack announces the button ("Alerts", "My location", …).
+            .semantics { contentDescription = description }
             .clickable(onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {

@@ -41,6 +41,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.pishi.iweather.data.FavoritesStore
 import com.pishi.iweather.data.POPULAR_IRAN_CITIES
 import com.pishi.iweather.data.WeatherStore
 import com.pishi.iweather.data.wmoInfo
@@ -97,6 +98,7 @@ class WidgetConfigActivity : ComponentActivity() {
         val s = strings(settings.lang)
         var cfg by remember { mutableStateOf(initial) }
         val appCity = WeatherStore.savedCity(this@WidgetConfigActivity)
+        val favorites = remember { FavoritesStore.load(this@WidgetConfigActivity) }
         val previewCity = cfg.city() ?: appCity ?: POPULAR_IRAN_CITIES.first()
         val previewReport = remember(cfg) { WidgetData.load(this@WidgetConfigActivity, previewCity) }
 
@@ -152,6 +154,27 @@ class WidgetConfigActivity : ComponentActivity() {
                     onClick = { cfg = cfg.copy(followAppCity = true) },
                 )
                 Text("${s.wFollowApp}${appCity?.let { " (${it.name})" } ?: ""}")
+            }
+            // AUD-016: the widget can be pinned to any saved city, not just the built-in list.
+            if (favorites.isNotEmpty()) {
+                Text(s.favoritesTitle, fontWeight = FontWeight.Bold)
+                for (city in favorites) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        RadioButton(
+                            selected = !cfg.followAppCity && cfg.cityName == city.name &&
+                                cfg.cityLat == city.latitude && cfg.cityLon == city.longitude,
+                            onClick = {
+                                cfg = cfg.copy(
+                                    followAppCity = false,
+                                    cityName = city.name,
+                                    cityLat = city.latitude,
+                                    cityLon = city.longitude,
+                                )
+                            },
+                        )
+                        Text(city.name)
+                    }
+                }
             }
             for (city in POPULAR_IRAN_CITIES) {
                 Row(verticalAlignment = Alignment.CenterVertically) {

@@ -205,7 +205,12 @@ object Insights {
                 if (fa) "اختلاف دمای روز و شب زیاده؛ برای شب یه لایهٔ اضافه همراهت باشه."
                 else "Big day–night temperature swing; carry an extra layer for the night.")
         }
-        rainWindow(report, st)?.let { out += AlertItem(AlertType.RAIN, it.emoji, it.text) }
+        // AUD-009: never two RAIN items in one list — when a probability alert already
+        // fired, the rain window stays available via the morning brief / insight, not as
+        // a second alert entry.
+        if (out.none { it.type == AlertType.RAIN }) {
+            rainWindow(report, st)?.let { out += AlertItem(AlertType.RAIN, it.emoji, it.text) }
+        }
         return out
     }
 

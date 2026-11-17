@@ -67,9 +67,11 @@ class AlertCheckWorker(context: Context, params: WorkerParameters) : CoroutineWo
         var posted = 0
         for (alert in fresh) {
             if (posted >= 3) break
-            val key = "$today|${city.name}|${alert.type.name}"
+            // Identity from coordinates, not the display name (AUD-006): a renamed city
+            // keeps its dedupe, and two same-named cities never share one.
+            val key = "$today|${WeatherStore.cityKey(city)}|${alert.type.name}"
             if (key in seen) continue
-            post(ctx, city.name, alert.emoji, alert.text, key.hashCode())
+            post(ctx, city.name, alert.emoji, alert.text, alertNotificationId(key))
             newSeen += key
             posted++
         }

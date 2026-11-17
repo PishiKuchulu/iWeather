@@ -44,7 +44,7 @@ object FavoritesStore {
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putString(KEY, arr.toString()).apply()
     }
 
-    /** Two cities are "the same place" when their coordinates are within ~2 km. */
+    /** Two cities are "the same place" within ~200 m (AUD-010) — nearby towns stay distinct favorites. */
     fun same(a: City, b: City): Boolean =
-        kotlin.math.abs(a.latitude - b.latitude) < 0.02 && kotlin.math.abs(a.longitude - b.longitude) < 0.02
+        WeatherStore.samePlace(a.latitude, a.longitude, b.latitude, b.longitude)
 }

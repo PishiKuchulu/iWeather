@@ -11,7 +11,6 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.pishi.iweather.data.SkyKind
 
 /**
  * iWeather "Luna" palettes — one hue family, two moods.
@@ -168,16 +167,3 @@ fun Modifier.lunaGlass(radius: Dp = 26.dp, cyan: Boolean = false): Modifier {
         .border(0.9.dp, border, shape)
 }
 
-// ---- Legacy sky-kind helpers (still used for widget colours / insight logic) ----
-
-fun skyGradient(kind: SkyKind): Brush = Brush.verticalGradient(skyColors(kind))
-
-fun skyColors(kind: SkyKind): List<Color> = when (kind) {
-    SkyKind.CLEAR_DAY -> listOf(Color(0xFF0B2672), Color(0xFF2C63D2), Color(0xFF86B8F6))
-    SkyKind.CLEAR_NIGHT -> listOf(Color(0xFF04050D), Color(0xFF0B0C2E), Color(0xFF2A1D70))
-    SkyKind.CLOUDY -> listOf(Color(0xFF1B2F72), Color(0xFF47629F), Color(0xFF8B9CC9))
-    SkyKind.RAIN -> listOf(Color(0xFF1F2744), Color(0xFF3E4A76), Color(0xFF6F7CA6))
-    SkyKind.SNOW -> listOf(Color(0xFF2B4A8C), Color(0xFF7396CA), Color(0xFFC6D7F0))
-    SkyKind.FOG -> listOf(Color(0xFF3A4A78), Color(0xFF8693BB), Color(0xFFC8CFE3))
-    SkyKind.STORM -> listOf(Color(0xFF0D1124), Color(0xFF222949), Color(0xFF444D7A))
-}

@@ -31,7 +31,8 @@ enum class TestState { IDLE, TESTING, OK, FAIL }
 /** Cached snapshot of a saved city, shown on the "Cities" sheet (temperature + condition). */
 data class FavInfo(val temperature: Double, val weatherCode: Int, val isDay: Boolean)
 
-fun favKey(city: City): String = String.format(Locale.US, "%.2f_%.2f", city.latitude, city.longitude)
+/** Single-sourced with the cache/notification identity (WeatherStore.cityKey). */
+fun favKey(city: City): String = WeatherStore.cityKey(city)
 
 data class IWeatherUiState(
     val loading: Boolean = true,
@@ -48,9 +49,21 @@ data class IWeatherUiState(
     val testState: TestState = TestState.IDLE,
     val favorites: List<City> = emptyList(),
     val favInfo: Map<String, FavInfo> = emptyMap(),
-    /** One-shot transient message key for snackbars: cache_cleared | data_cleared | reset_done | fav_added | fav_removed | fav_limit | fav_exists. */
+    /** One-shot transient message key for snackbars: cache_cleared | data_cleared | reset_done | fav_added | fav_removed | fav_limit | fav_exists | upd_uptodate | upd_error | upd_signer. */
     val message: String? = null,
+    /** In-app updater state (GitHub Releases chain, Anvex-style). */
+    val update: UpdateUi = UpdateUi.Idle,
 )
+
+/** Updater UI state machine: silent auto-check on launch, explicit flow once an update exists. */
+sealed interface UpdateUi {
+    data object Idle : UpdateUi
+    data object Checking : UpdateUi
+    data object UpToDate : UpdateUi
+    data class Available(val info: com.pishi.iweather.data.UpdateManager.UpdateInfo) : UpdateUi
+    data class Downloading(val info: com.pishi.iweather.data.UpdateManager.UpdateInfo, val percent: Int) : UpdateUi
+    data class Ready(val info: com.pishi.iweather.data.UpdateManager.UpdateInfo, val apkPath: String) : UpdateUi
+}
 
 class IWeatherViewModel(app: Application) : AndroidViewModel(app) {
     private val api = WeatherApi()
@@ -71,6 +84,91 @@ class IWeatherViewModel(app: Application) : AndroidViewModel(app) {
         }
         load(saved, showLoading = cached == null)
         publishFavInfo()
+        checkForUpdate(manual = false)
+    }
+
+    // ---------- in-app updater (GitHub Releases) ----------
+
+    private fun installedVersion(): String = try {
+        val ctx = getApplication<Application>()
+        ctx.packageManager.getPackageInfo(ctx.packageName, 0).versionName ?: "0.0.0"
+    } catch (e: Exception) {
+        "0.0.0"
+    }
+
+    /**
+     * Checks the latest GitHub release. Automatic checks (launch) stay silent: they only
+     * surface the Available state. Manual checks also report "up to date" / failures.
+     */
+    fun checkForUpdate(manual: Boolean) {
+        val cur = _state.value.update
+        if (cur is UpdateUi.Checking || cur is UpdateUi.Downloading) return
+        _state.update { it.copy(update = UpdateUi.Checking) }
+        viewModelScope.launch {
+            runCatching { com.pishi.iweather.data.UpdateManager.check(installedVersion()) }
+                .onSuccess { info ->
+                    _state.update { st ->
+                        when {
+                            info != null -> st.copy(update = UpdateUi.Available(info))
+                            manual -> st.copy(update = UpdateUi.UpToDate, message = "upd_uptodate")
+                            else -> st.copy(update = UpdateUi.Idle)
+                        }
+                    }
+                }
+                .onFailure {
+                    _state.update { st ->
+                        if (manual) st.copy(update = UpdateUi.Idle, message = "upd_error")
+                        else st.copy(update = UpdateUi.Idle)
+                    }
+                }
+        }
+    }
+
+    /** Downloads the offered update, verifies SHA-256 (inside the manager) + signer, then offers install. */
+    fun downloadUpdate() {
+        val avail = _state.value.update as? UpdateUi.Available ?: return
+        _state.update { it.copy(update = UpdateUi.Downloading(avail.info, 0)) }
+        viewModelScope.launch {
+            runCatching {
+                val file = com.pishi.iweather.data.UpdateManager.download(getApplication(), avail.info) { pct ->
+                    _state.update { st ->
+                        val d = st.update as? UpdateUi.Downloading
+                        if (d != null) st.copy(update = d.copy(percent = pct)) else st
+                    }
+                }
+                if (!com.pishi.iweather.data.UpdateManager.verifySigner(getApplication(), file)) {
+                    file.delete()
+                    throw com.pishi.iweather.data.UpdateManager.SignerMismatchException()
+                }
+                file
+            }.onSuccess { file ->
+                _state.update { it.copy(update = UpdateUi.Ready(avail.info, file.absolutePath)) }
+            }.onFailure { e ->
+                _state.update {
+                    it.copy(
+                        update = UpdateUi.Idle,
+                        message = if (e is com.pishi.iweather.data.UpdateManager.SignerMismatchException) "upd_signer" else "upd_error",
+                    )
+                }
+            }
+        }
+    }
+
+    fun installUpdate() {
+        val ready = _state.value.update as? UpdateUi.Ready ?: return
+        val ctx = getApplication<Application>()
+        runCatching {
+            ctx.startActivity(
+                com.pishi.iweather.data.UpdateManager.installIntent(ctx, java.io.File(ready.apkPath)),
+            )
+        }
+    }
+
+    fun dismissUpdate() {
+        val cur = _state.value.update
+        if (cur is UpdateUi.Available || cur is UpdateUi.Ready || cur is UpdateUi.UpToDate) {
+            _state.update { it.copy(update = UpdateUi.Idle) }
+        }
     }
 
     // ---------- settings ----------

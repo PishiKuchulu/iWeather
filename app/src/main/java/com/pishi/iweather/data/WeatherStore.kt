@@ -14,14 +14,24 @@ object WeatherStore {
     fun savedCity(context: Context): City? {
         val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
         val name = prefs.getString("city_name", null) ?: return null
-        val lat = prefs.getFloat("city_lat", Float.NaN)
-        val lon = prefs.getFloat("city_lon", Float.NaN)
+        // Coordinates persist at full Double precision (raw bits in a Long). The legacy
+        // Float keys are still read as a fallback for installs from before this change.
+        val lat = if (prefs.contains("city_lat_bits")) {
+            Double.fromBits(prefs.getLong("city_lat_bits", 0L))
+        } else {
+            prefs.getFloat("city_lat", Float.NaN).toDouble()
+        }
+        val lon = if (prefs.contains("city_lon_bits")) {
+            Double.fromBits(prefs.getLong("city_lon_bits", 0L))
+        } else {
+            prefs.getFloat("city_lon", Float.NaN).toDouble()
+        }
         if (lat.isNaN() || lon.isNaN()) return null
         return City(
             name = name,
             country = prefs.getString("city_country", "") ?: "",
             admin1 = prefs.getString("city_admin", "") ?: "",
-            latitude = lat.toDouble(), longitude = lon.toDouble(),
+            latitude = lat, longitude = lon,
         )
     }
 
@@ -30,10 +40,22 @@ object WeatherStore {
             .putString("city_name", city.name)
             .putString("city_country", city.country)
             .putString("city_admin", city.admin1)
-            .putFloat("city_lat", city.latitude.toFloat())
-            .putFloat("city_lon", city.longitude.toFloat())
+            .putLong("city_lat_bits", city.latitude.toRawBits())
+            .putLong("city_lon_bits", city.longitude.toRawBits())
             .apply()
     }
+
+    /**
+     * The one canonical city-identity key (AUD-010/AUD-014): a ~110 m coordinate grid.
+     * Two places farther apart than ~110 m never share a cache, a favorite slot, or a
+     * notification identity; the same place re-geocoded returns identical coordinates.
+     */
+    fun cityKey(city: City): String =
+        String.format(java.util.Locale.US, "%.3f_%.3f", city.latitude, city.longitude)
+
+    /** Coordinate identity tolerance (~200 m): same place, allowing minor geocoder jitter. */
+    fun samePlace(aLat: Double, aLon: Double, bLat: Double, bLon: Double): Boolean =
+        kotlin.math.abs(aLat - bLat) < 0.002 && kotlin.math.abs(aLon - bLon) < 0.002
 
     fun cachedReport(context: Context, api: WeatherApi = WeatherApi()): WeatherReport? {
         val city = savedCity(context) ?: POPULAR_IRAN_CITIES.first()
@@ -49,10 +71,18 @@ object WeatherStore {
         val fetchedAt = prefs.getLong("cache_fetched_at", 0L)
         val forecastFile = File(context.filesDir, "last_forecast.json")
         if (fetchedAt == 0L || !forecastFile.exists()) return null
-        val cacheLat = prefs.getFloat("cache_lat", Float.NaN)
-        val cacheLon = prefs.getFloat("cache_lon", Float.NaN)
-        if (cacheLat.isNaN() || kotlin.math.abs(cacheLat - city.latitude.toFloat()) > 0.01f) return null
-        if (cacheLon.isNaN() || kotlin.math.abs(cacheLon - city.longitude.toFloat()) > 0.01f) return null
+        val cacheLat = if (prefs.contains("cache_lat_bits")) {
+            Double.fromBits(prefs.getLong("cache_lat_bits", 0L))
+        } else {
+            prefs.getFloat("cache_lat", Float.NaN).toDouble()
+        }
+        val cacheLon = if (prefs.contains("cache_lon_bits")) {
+            Double.fromBits(prefs.getLong("cache_lon_bits", 0L))
+        } else {
+            prefs.getFloat("cache_lon", Float.NaN).toDouble()
+        }
+        if (cacheLat.isNaN() || cacheLon.isNaN()) return null
+        if (!samePlace(cacheLat, cacheLon, city.latitude, city.longitude)) return null
         return try {
             val airFile = File(context.filesDir, "last_air.json")
             val air = if (airFile.exists()) airFile.readText() else null
@@ -69,8 +99,8 @@ object WeatherStore {
             if (raw.airJson != null) airFile.writeText(raw.airJson) else airFile.delete()
             context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
                 .putLong("cache_fetched_at", fetchedAt)
-                .putFloat("cache_lat", city.latitude.toFloat())
-                .putFloat("cache_lon", city.longitude.toFloat())
+                .putLong("cache_lat_bits", city.latitude.toRawBits())
+                .putLong("cache_lon_bits", city.longitude.toRawBits())
                 .apply()
             saveCityCache(context, city, raw, fetchedAt)
         }
@@ -79,9 +109,6 @@ object WeatherStore {
     // ---- per-city cache: every city that was loaded keeps its last report (bounded, oldest evicted) ----
 
     private const val MAX_CITY_CACHES = 16
-
-    private fun cityKey(city: City): String =
-        String.format(java.util.Locale.US, "%.2f_%.2f", city.latitude, city.longitude)
 
     fun saveCityCache(context: Context, city: City, raw: WeatherApi.RawWeather, fetchedAt: Long) {
         val key = cityKey(city)
@@ -124,6 +151,7 @@ object WeatherStore {
         File(context.filesDir, "last_air.json").delete()
         val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
         val edit = prefs.edit().remove("cache_fetched_at").remove("cache_lat").remove("cache_lon")
+            .remove("cache_lat_bits").remove("cache_lon_bits")
         for (k in prefs.all.keys.filter { it.startsWith("cc_ts_") }) {
             val key = k.removePrefix("cc_ts_")
             File(context.filesDir, "cc_fc_$key.json").delete()

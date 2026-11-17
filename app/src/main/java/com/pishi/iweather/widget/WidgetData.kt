@@ -6,7 +6,6 @@ import com.pishi.iweather.data.WeatherApi
 import com.pishi.iweather.data.WeatherReport
 import com.pishi.iweather.data.WeatherStore
 import java.io.File
-import java.util.Locale
 
 /**
  * Weather data for widgets. The app's own city reuses the shared app cache
@@ -14,8 +13,8 @@ import java.util.Locale
  * refreshed by the same background worker — never a fake/default report.
  */
 object WidgetData {
-    private fun key(city: City): String =
-        String.format(Locale.US, "%.2f_%.2f", city.latitude, city.longitude)
+    /** Same canonical identity as the app caches (WeatherStore.cityKey). */
+    private fun key(city: City): String = WeatherStore.cityKey(city)
 
     private fun forecastFile(context: Context, city: City) =
         File(context.filesDir, "widget_fc_${key(city)}.json")
@@ -43,8 +42,7 @@ object WidgetData {
         }
         val saved = WeatherStore.savedCity(context)
         if (saved != null &&
-            kotlin.math.abs(saved.latitude - city.latitude) < 0.01 &&
-            kotlin.math.abs(saved.longitude - city.longitude) < 0.01
+            WeatherStore.samePlace(saved.latitude, saved.longitude, city.latitude, city.longitude)
         ) {
             return WeatherStore.cachedReport(context, city, api)
         }

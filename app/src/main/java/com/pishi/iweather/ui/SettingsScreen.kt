@@ -77,6 +77,7 @@ fun SettingsScreen(
     onResetSettings: () -> Unit,
     onNotifToggle: (Boolean) -> Unit,
     onBriefToggle: (Boolean) -> Unit,
+    onCheckUpdate: () -> Unit,
     lastFetchMillis: Long,
     appVersion: String,
 ) {
@@ -307,13 +308,23 @@ fun SettingsScreen(
                 SectionTitle2("ℹ️ ${s.sAbout}")
                 InfoRow(s.sVersion, appVersion)
                 Spacer(Modifier.height(4.dp))
-                OutlinedButton(onClick = {
-                    val intent = Intent(
-                        Intent.ACTION_VIEW,
-                        Uri.parse("https://github.com/PishiKuchulu/iWeather/releases"),
+                // In-app updater (GitHub Releases): check → download → SHA-256 + signer
+                // verification → system installer. The dialog itself lives in HomeScreen.
+                OutlinedButton(
+                    onClick = onCheckUpdate,
+                    enabled = state.update !is UpdateUi.Checking && state.update !is UpdateUi.Downloading,
+                ) { Text(s.sCheckUpdate) }
+                when (val u = state.update) {
+                    UpdateUi.Checking -> Text(s.updChecking, color = Luna.TextDim, fontSize = 12.5.sp)
+                    UpdateUi.UpToDate -> Text(s.updUpToDate, color = Luna.TextDim, fontSize = 12.5.sp)
+                    is UpdateUi.Available -> Text("${s.updNewVersion}: ${u.info.version}", color = Luna.TextDim, fontSize = 12.5.sp)
+                    is UpdateUi.Downloading -> Text(
+                        "${s.updDownloading} ${Fmt.num(u.percent, st.lang)}${if (st.isFa) "٪" else "%"}",
+                        color = Luna.TextDim, fontSize = 12.5.sp,
                     )
-                    runCatching { context.startActivity(intent) }
-                }) { Text(s.sCheckUpdate) }
+                    is UpdateUi.Ready -> Text("${s.updNewVersion}: ${u.info.version}", color = Luna.TextDim, fontSize = 12.5.sp)
+                    UpdateUi.Idle -> Unit
+                }
                 Spacer(Modifier.height(8.dp))
                 Text(s.sSources, color = Luna.Content, fontSize = 14.sp, fontWeight = FontWeight.Medium)
                 Text(s.sSourcesBody, color = Luna.Content.copy(alpha = 0.92f), fontSize = 12.5.sp)

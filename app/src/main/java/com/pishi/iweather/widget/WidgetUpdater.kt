@@ -56,12 +56,24 @@ object WidgetUpdater {
 
     /** Manual refresh from a widget button: fetch fresh data, then re-render. */
     fun enqueueRefresh(context: Context) {
-        WorkManager.getInstance(context)
-            .enqueue(OneTimeWorkRequestBuilder<WidgetRefreshWorker>().build())
+        val request = OneTimeWorkRequestBuilder<WidgetRefreshWorker>()
+            .setConstraints(networkConstraints())
+            .setBackoffCriteria(androidx.work.BackoffPolicy.EXPONENTIAL, 30, java.util.concurrent.TimeUnit.MINUTES)
+            .build()
+        WorkManager.getInstance(context).enqueue(request)
     }
 
+    /** The refresh worker fetches weather: wait for connectivity instead of failing offline (AUD-005). */
+    private fun networkConstraints(): androidx.work.Constraints =
+        androidx.work.Constraints.Builder()
+            .setRequiredNetworkType(androidx.work.NetworkType.CONNECTED)
+            .build()
+
     fun schedulePeriodic(context: Context) {
-        val request = PeriodicWorkRequestBuilder<WidgetRefreshWorker>(1, TimeUnit.HOURS).build()
+        val request = PeriodicWorkRequestBuilder<WidgetRefreshWorker>(1, TimeUnit.HOURS)
+            .setConstraints(networkConstraints())
+            .setBackoffCriteria(androidx.work.BackoffPolicy.EXPONENTIAL, 30, java.util.concurrent.TimeUnit.MINUTES)
+            .build()
         WorkManager.getInstance(context).enqueueUniquePeriodicWork(
             "iweather_widget_refresh", ExistingPeriodicWorkPolicy.KEEP, request,
         )

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Backup policy (AUD-003): the user's settings + saved cities live in the "iweather"
+  SharedPreferences and ARE backed up. Weather cache files (last forecast + per-city
+  caches) and the alert dedupe store are NOT: they are re-fetchable and would otherwise
+  carry precise saved coordinates into the backup.
+-->
+<data-extraction-rules>
+    <cloud-backup>
+        <include domain="sharedpref" path="iweather.xml" />
+        <exclude domain="file" path="." />
+        <exclude domain="sharedpref" path="iweather_alerts_seen.xml" />
+    </cloud-backup>
+    <device-transfer>
+        <include domain="sharedpref" path="iweather.xml" />
+        <exclude domain="file" path="." />
+        <exclude domain="sharedpref" path="iweather_alerts_seen.xml" />
+    </device-transfer>
+</data-extraction-rules>

@@ -70,27 +70,16 @@ class WeatherApi {
     fun parseReport(city: City, raw: RawWeather, fetchedAtMillis: Long): WeatherReport {
         val root = JSONObject(raw.forecastJson)
 
-        val c = root.getJSONObject("current")
-        val current = CurrentWeather(
-            temperature = c.getDouble("temperature_2m"),
-            feelsLike = c.getDouble("apparent_temperature"),
-            humidity = c.getInt("relative_humidity_2m"),
-            isDay = c.optInt("is_day", 1) == 1,
-            weatherCode = c.getInt("weather_code"),
-            windSpeed = c.getDouble("wind_speed_10m"),
-            windDirection = c.optInt("wind_direction_10m", 0),
-            windGusts = c.optDouble("wind_gusts_10m", 0.0),
-            cloudCover = c.optInt("cloud_cover", 0),
-            dewPoint = c.optDouble("dew_point_2m", 0.0),
-            pressure = c.getDouble("surface_pressure"),
-            precipitation = c.optDouble("precipitation", 0.0),
-            timeIso = c.getString("time"),
-        )
+        // Tolerance policy (AUD-015): only the current block's `time` stays strict — the
+        // hourly window logic depends on it. Every other current field degrades to the
+        // first hourly point (or a neutral default) instead of discarding a whole report.
+        val c = root.optJSONObject("current") ?: JSONObject()
+        val timeIso = c.getString("time")
 
-        val h = root.getJSONObject("hourly")
-        val hTimes = h.getJSONArray("time")
+        val h = root.optJSONObject("hourly") ?: JSONObject()
+        val hTimes = h.optJSONArray("time") ?: JSONArray()
         val hourly = ArrayList<HourPoint>()
-        val now = LocalDateTime.parse(current.timeIso, DateTimeFormatter.ISO_LOCAL_DATE_TIME)
+        val now = LocalDateTime.parse(timeIso, DateTimeFormatter.ISO_LOCAL_DATE_TIME)
         for (i in 0 until hTimes.length()) {
             val iso = hTimes.getString(i)
             val dt = runCatching { LocalDateTime.parse(iso, DateTimeFormatter.ISO_LOCAL_DATE_TIME) }.getOrNull() ?: continue
@@ -117,8 +106,25 @@ class WeatherApi {
             if (hourly.size >= 48) break
         }
 
-        val d = root.getJSONObject("daily")
-        val dTimes = d.getJSONArray("time")
+        val firstHour = hourly.firstOrNull()
+        val current = CurrentWeather(
+            temperature = c.optDouble("temperature_2m", firstHour?.temperature ?: 0.0),
+            feelsLike = c.optDouble("apparent_temperature", firstHour?.feelsLike ?: firstHour?.temperature ?: 0.0),
+            humidity = c.optInt("relative_humidity_2m", firstHour?.humidity ?: 0),
+            isDay = c.optInt("is_day", if (firstHour?.isDay == false) 0 else 1) == 1,
+            weatherCode = c.optInt("weather_code", firstHour?.weatherCode ?: 0),
+            windSpeed = c.optDouble("wind_speed_10m", firstHour?.windSpeed ?: 0.0),
+            windDirection = c.optInt("wind_direction_10m", firstHour?.windDirection ?: 0),
+            windGusts = c.optDouble("wind_gusts_10m", firstHour?.windGusts ?: 0.0),
+            cloudCover = c.optInt("cloud_cover", firstHour?.cloudCover ?: 0),
+            dewPoint = c.optDouble("dew_point_2m", firstHour?.dewPoint ?: 0.0),
+            pressure = c.optDouble("surface_pressure", firstHour?.pressure ?: 0.0),
+            precipitation = c.optDouble("precipitation", firstHour?.precipitationMm ?: 0.0),
+            timeIso = timeIso,
+        )
+
+        val d = root.optJSONObject("daily") ?: JSONObject()
+        val dTimes = d.optJSONArray("time") ?: JSONArray()
         val daily = ArrayList<DayForecast>()
         for (i in 0 until dTimes.length()) {
             daily += DayForecast(

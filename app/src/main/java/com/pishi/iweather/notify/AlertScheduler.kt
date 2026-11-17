@@ -1,7 +1,10 @@
 package com.pishi.iweather.notify
 
 import android.content.Context
+import androidx.work.BackoffPolicy
+import androidx.work.Constraints
 import androidx.work.ExistingPeriodicWorkPolicy
+import androidx.work.NetworkType
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import com.pishi.iweather.util.AppSettings
@@ -14,6 +17,10 @@ object AlertScheduler {
     private const val WORK_NAME = "iweather_alert_checks"
     private const val BRIEF_WORK = "iweather_morning_brief"
 
+    /** Both workers fetch weather: defer to connectivity instead of waking up to fail (AUD-005). */
+    private val networkConstraints: Constraints
+        get() = Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build()
+
     fun reschedule(context: Context, settings: AppSettings) {
         val wm = WorkManager.getInstance(context)
 
@@ -22,7 +29,10 @@ object AlertScheduler {
         } else {
             val request = PeriodicWorkRequestBuilder<AlertCheckWorker>(
                 settings.notifIntervalH.toLong().coerceAtLeast(1), TimeUnit.HOURS,
-            ).build()
+            )
+                .setConstraints(networkConstraints)
+                .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 30, TimeUnit.MINUTES)
+                .build()
             wm.enqueueUniquePeriodicWork(WORK_NAME, ExistingPeriodicWorkPolicy.UPDATE, request)
         }
 
@@ -32,15 +42,10 @@ object AlertScheduler {
             // First run at the next occurrence of the chosen hour, then every 24 h.
             val request = PeriodicWorkRequestBuilder<MorningBriefWorker>(24, TimeUnit.HOURS)
                 .setInitialDelay(millisUntilNext(settings.briefHour), TimeUnit.MILLISECONDS)
+                .setConstraints(networkConstraints)
+                .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 30, TimeUnit.MINUTES)
                 .build()
             wm.enqueueUniquePeriodicWork(BRIEF_WORK, ExistingPeriodicWorkPolicy.UPDATE, request)
         }
-    }
-
-    /** Milliseconds from now until the next [hour]:00 local time (zone-aware, so DST changes are handled). */
-    internal fun millisUntilNext(hour: Int, now: ZonedDateTime = ZonedDateTime.now()): Long {
-        var next = now.withHour(hour.coerceIn(0, 23)).withMinute(0).withSecond(0).withNano(0)
-        if (!next.isAfter(now.plusMinutes(1))) next = next.plusDays(1)
-        return Duration.between(now, next).toMillis()
     }
 }

@@ -110,6 +110,10 @@ class MainActivity : ComponentActivity() {
                     onMoveFavorite = { city, up -> viewModel.moveFavorite(city, up) },
                     onRemoveFavorite = { viewModel.removeFavorite(it) },
                     onRefreshFavorites = { viewModel.refreshFavorites() },
+                    onCheckUpdate = { viewModel.checkForUpdate(manual = true) },
+                    onDownloadUpdate = { viewModel.downloadUpdate() },
+                    onInstallUpdate = { viewModel.installUpdate() },
+                    onDismissUpdate = { viewModel.dismissUpdate() },
                     lastFetchMillis = state.report?.fetchedAtMillis ?: viewModel.lastFetchMillis(),
                     appVersion = appVersion,
                 )
@@ -169,10 +173,10 @@ class MainActivity : ComponentActivity() {
             if (stale == null || loc.time > stale.time) stale = loc
         }
 
-        val fine = ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
+        // COARSE is the only location permission the app declares/requests (AUD-004), and
+        // it covers the network provider — city-level precision is all a weather app needs.
         val provider = when {
             runCatching { lm.isProviderEnabled(LocationManager.NETWORK_PROVIDER) }.getOrDefault(false) -> LocationManager.NETWORK_PROVIDER
-            fine && runCatching { lm.isProviderEnabled(LocationManager.GPS_PROVIDER) }.getOrDefault(false) -> LocationManager.GPS_PROVIDER
             else -> null
         }
         if (provider == null) {
@@ -181,12 +185,24 @@ class MainActivity : ComponentActivity() {
         }
         toast(fa = "در حال پیدا کردن موقعیت…", en = "Finding your location…")
         val fallback = stale
-        // Typed null: LocationManagerCompat has two getCurrentLocation overloads that differ
-        // only in the CancellationSignal type (android.os vs androidx.core.os); a bare null
-        // is ambiguous and the lambda's type cannot be inferred.
-        val cancelSignal: android.os.CancellationSignal? = null
+        // Watchdog (AUD-017): if the provider never calls back, cancel after 15 s and take
+        // the same fallback path as a null fix, so the flow always terminates visibly.
+        val cancelSignal = android.os.CancellationSignal()
+        var settled = false
+        val mainHandler = android.os.Handler(android.os.Looper.getMainLooper())
+        val watchdog = Runnable {
+            if (!settled) {
+                settled = true
+                runCatching { cancelSignal.cancel() }
+                if (fallback != null) viewModel.onMyLocation(fallback.latitude, fallback.longitude) else notFound()
+            }
+        }
+        mainHandler.postDelayed(watchdog, 15_000L)
         try {
             LocationManagerCompat.getCurrentLocation(lm, provider, cancelSignal, ContextCompat.getMainExecutor(this)) { loc ->
+                if (settled) return@getCurrentLocation
+                settled = true
+                mainHandler.removeCallbacks(watchdog)
                 when {
                     loc != null -> viewModel.onMyLocation(loc.latitude, loc.longitude)
                     fallback != null -> viewModel.onMyLocation(fallback.latitude, fallback.longitude)
@@ -194,6 +210,7 @@ class MainActivity : ComponentActivity() {
                 }
             }
         } catch (e: SecurityException) {
+            mainHandler.removeCallbacks(watchdog)
             notFound()
         }
     }
