@@ -2,18 +2,18 @@
 <!--
   Backup policy (AUD-003): the user's settings + saved cities live in the "iweather"
   SharedPreferences and ARE backed up. Weather cache files (last forecast + per-city
-  caches) and the alert dedupe store are NOT: they are re-fetchable and would otherwise
-  carry precise saved coordinates into the backup.
+  caches, all plain files in filesDir) and the alert dedupe store are NOT: they are
+  re-fetchable and would otherwise carry precise saved coordinates into the backup.
+
+  API 31+ extraction semantics: a section transfers ONLY what it includes, so the
+  single include below is the whole policy — no excludes are needed (and lint
+  rejects excludes that are not inside an included path).
 -->
 <data-extraction-rules>
     <cloud-backup>
         <include domain="sharedpref" path="iweather.xml" />
-        <exclude domain="file" path="." />
-        <exclude domain="sharedpref" path="iweather_alerts_seen.xml" />
     </cloud-backup>
     <device-transfer>
         <include domain="sharedpref" path="iweather.xml" />
-        <exclude domain="file" path="." />
-        <exclude domain="sharedpref" path="iweather_alerts_seen.xml" />
     </device-transfer>
 </data-extraction-rules>

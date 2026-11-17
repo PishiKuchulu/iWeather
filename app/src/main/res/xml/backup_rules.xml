@@ -1,7 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Legacy (API <= 30) twin of data_extraction_rules.xml — same policy, see that file. -->
+<!--
+  Legacy (API <= 30) twin of data_extraction_rules.xml — same policy, see that file.
+  Legacy semantics differ: everything is backed up unless excluded, and lint
+  requires every exclude to sit inside an included path of the same domain, so
+  each domain is included at its root and then carved back:
+  - sharedpref: all prefs except the alert dedupe store (in practice the only
+    other pref file is "iweather.xml" itself, which stays backed up).
+  - file: include "." + exclude "." nets to "no files at all" (excludes win),
+    which keeps the re-fetchable weather caches out of the backup.
+-->
 <full-backup-content>
-    <include domain="sharedpref" path="iweather.xml" />
-    <exclude domain="file" path="." />
+    <include domain="sharedpref" path="." />
     <exclude domain="sharedpref" path="iweather_alerts_seen.xml" />
+    <include domain="file" path="." />
+    <exclude domain="file" path="." />
 </full-backup-content>
