@@ -66,11 +66,16 @@ jobs:
             -keystore "$RUNNER_TEMP/iweather-release.jks" \
             -storepass "$IWEATHER_KEYSTORE_PASSWORD" \
             -alias "$IWEATHER_KEY_ALIAS" | grep "SHA256:" | awk '{print $2}' | tr -d ':' | tr 'A-F' 'a-f')
-          ACTUAL=$(grep "Signer #1 certificate SHA-256 digest" certs.txt | awk '{print $NF}')
+          ACTUAL=$(grep "certificate SHA-256 digest" certs.txt | head -1 | sed 's/.*digest: *//' | tr -d ': ' | tr 'A-F' 'a-f')
+          if [ -z "$ACTUAL" ]; then
+            echo "::error::Could not parse the APK signer digest from the apksigner output."
+            exit 1
+          fi
           echo "expected signer: $EXPECTED"
           echo "actual signer:   $ACTUAL"
           if [ "$EXPECTED" != "$ACTUAL" ]; then
             echo "::error::APK signer does not match the release keystore."
+            
             exit 1
           fi
       - name: Prepare release asset
