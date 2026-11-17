@@ -73,3 +73,40 @@ jobs:
             echo "::error::APK signer does not match the release keystore."
             exit 1
           fi
+      - name: Prepare release asset
+        run: |
+          VERSION="${{ inputs.release_tag }}"
+          VERSION="${VERSION#v}"
+          if [ -z "$VERSION" ]; then
+            VERSION=$(grep -oP 'versionName = "\K[^"]+' app/build.gradle.kts)
+          fi
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+          cp app/build/outputs/apk/release/app-release.apk "iWeather-${VERSION}.apk"
+          sha256sum "iWeather-${VERSION}.apk" > "iWeather-${VERSION}.apk.sha256"
+          ls -lh iWeather-*
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "v${VERSION}" \
+            "iWeather-${VERSION}.apk" \
+            "iWeather-${VERSION}.apk.sha256" \
+            --target main \
+            --title "iWeather ${VERSION}" \
+            --notes "🌤️ **iWeather — اپلیکیشن آب‌وهوای فارسی با صحنه‌های زندهٔ آسمون**
+
+          - 🆕 **آپدیت داخل خود اپ** (مثل Anvex): بررسی خودکار نسخهٔ جدید، دانلود با بررسی SHA-256 و امضا، نصب با یه لمس — از تنظیمات ← درباره هم دستی می‌تونی چک کنی
+          - 📍 مدیر چند لوکیشن: افزودن شهر از جستجو بدون سوییچ، مرتب‌سازی شهرهای ذخیره‌شده، نشان شهر فعلی
+          - 🌗 تم روز و شب (خودکار بر اساس روز/شب بودن لوکیشن، یا دستی از تنظیمات ← ظاهر) + رابط ظریف‌تر
+          - 🔏 این نسخه برای اولین بار با **کی‌استور اختصاصی** امضا شده (نه امضای دیباگ)
+          - 🌌 ۱۶ صحنهٔ روز/شب متناسب با هوای واقعی + ذره‌های زنده (باران، برف، تگرگ، ستاره، رعدوبرق)
+          - 🧠 حال‌وهوای امروز، «چی بپوشم؟»، هشدارهای هوشمند و امتیاز فعالیت (دویدن، پیاده‌روی، عکاسی، رانندگی)
+          - 🇮🇷 فارسی کامل و راست‌به‌چپ، تاریخ شمسی، اعداد فارسی
+          - 📊 ساعت‌به‌ساعت ۴۸ ساعت + پیش‌بینی ۱۶ روزه + کیفیت هوا و UV
+          - 🔌 داده از Open-Meteo — رایگان، بدون API Key
+
+          ⚠️ **توجه برای نصب روی نسخه‌های قبلی:** چون امضای اپ عوض شده، نصب مستقیم روی ۱.۵.۰ یا قدیمی‌تر ممکن نیست؛ یه بار اپ رو حذف و این نسخه رو تازه نصب کن (شهرهای ذخیره‌شده و تنظیمات با حذف پاک می‌شن). از این نسخه به بعد، آپدیت‌ها از داخل خود اپ نصب می‌شن.
+
+          📦 **iWeather-${VERSION}.apk** — signed with the project's dedicated keystore. The .sha256 sidecar sits next to it for download verification, and the in-app updater requires it.
+
+          Android weather app with live illustrated sky scenes, Persian-first UI, Jalali calendar — free Open-Meteo data, no API key. NOTE: the signing key changed with this release (dedicated keystore instead of the debug key), so upgrading from 1.5.0 or older needs one uninstall + fresh install; from 1.6.0 on, updates install in-app."
